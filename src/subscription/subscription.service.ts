@@ -6,6 +6,15 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 export class SubscriptionsService {
   constructor(private readonly logger: PinoLogger) {}
 
-  async createSubscription(data: CreateSubscriptionDto) {}
-  async cancelSubscription() {}
+  async createSubscription(data: CreateSubscriptionDto) {
+    try {
+      const { msisdn, transactionId, urls, paymentProvider, keyword } =
+        data.body;
+    } catch (e) {
+      this.logger.error({});
+    }
+  }
+  async cancelSubscription() {
+    return 0;
+  }
 }

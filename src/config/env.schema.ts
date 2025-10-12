@@ -7,6 +7,19 @@ export const envSchema = z.object({
   BILLING_SERVICE_PORT: z.coerce.number().int().positive(),
   BILLING_SERVICE_HTTP_PORT: z.coerce.number().int().positive(),
 
+  // redis
+  REDIS_HOST: z.string().min(1, 'REDIS_HOST cannot be empty'),
+  REDIS_PORT: z.coerce.number().int().positive(),
+  REDIS_PASSWORD: z.string().optional(),
+  REDIS_DB: z.coerce.number().int().nonnegative().optional(),
+  REDIS_KEY_PREFIX: z.string().optional().default('cache:'),
+  CACHE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .default(300000), // 5 minutes
+
   // RabbitMQ
   RMQ_HOST: z.string().min(1),
   RMQ_PORT: z.coerce.number().int().positive(),

@@ -3,18 +3,26 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CacheModule } from './common/cache/cache.module';
 import appConfig from './config/app.config';
+import redisConfig from './config/redis.config';
 import rmqConfig from './config/rmq.config';
 import { LoggerModule } from './logger/logger.module';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { PlanModule } from './plan/plan.module';
+import { ProductModule } from './product/product.module';
+import { SubscriptionsModule } from './subscription/subscription.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
     // Configurations
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, rmqConfig],
+      load: [appConfig, redisConfig, rmqConfig],
     }),
+
+    // Cache
+    CacheModule,
 
     // RabbitMQ Client for publishing events
     ClientsModule.registerAsync([
@@ -46,6 +54,12 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     LoggerModule,
 
     SubscriptionsModule,
+
+    ProductModule,
+
+    PlanModule,
+
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
