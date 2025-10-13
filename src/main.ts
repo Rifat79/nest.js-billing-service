@@ -2,8 +2,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { Logger } from 'nestjs-pino';
+import { Logger, PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
+import { PrismaInitializationExceptionFilter } from './common/filters/prisma-initialization-exception.filter';
+import { PrismaValidationExceptionFilter } from './common/filters/prisma-validation-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -35,6 +38,42 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Global Prisma exception filters
+  const pLogger = await app.resolve(PinoLogger);
+  app.useGlobalFilters(
+    new PrismaClientExceptionFilter(pLogger),
+    new PrismaValidationExceptionFilter(pLogger),
+    new PrismaInitializationExceptionFilter(pLogger),
+  );
+
+  // Graceful shutdown
+
+  process.on('SIGINT', () => {
+    shutdown('SIGINT').catch((err) => {
+      logger.error('Error during SIGINT shutdown', err);
+      process.exit(1);
+    });
+  });
+
+  process.on('SIGTERM', () => {
+    shutdown('SIGTERM').catch((err) => {
+      logger.error('Error during SIGTERM shutdown', err);
+      process.exit(1);
+    });
+  });
+
+  async function shutdown(signal: string) {
+    logger.log(`${signal} received: closing HTTP server`);
+    try {
+      await app.close();
+      logger.log('Graceful shutdown complete');
+      process.exit(0);
+    } catch (error) {
+      logger.error('Shutdown failed', error);
+      process.exit(1);
+    }
+  }
 
   await app.startAllMicroservices();
 

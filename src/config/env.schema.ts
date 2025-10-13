@@ -27,6 +27,17 @@ export const envSchema = z.object({
   RMQ_PASS: z.string().min(1),
   NOTIFICATION_QUEUE_NAME: z.string().min(1),
 
+  // Database
+  DATABASE_URL: z
+    .string()
+    .url({ message: 'DATABASE_URL must be a valid URL' })
+    .refine((url) => url.startsWith('postgresql://'), {
+      message: 'DATABASE_URL must start with "postgresql://"',
+    }),
+  DB_CONNECTION_LIMIT: z.coerce.number().int().positive(),
+  DB_POOL_TIMEOUT: z.coerce.number().int().positive(),
+  DB_CONNECT_TIMEOUT: z.coerce.number().int().positive(),
+
   // log
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])

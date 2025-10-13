@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
+import { PaymentService } from 'src/payment/payment.service';
+import { PlanService } from 'src/plan/plan.service';
+import { ProductService } from 'src/product/product.service';
+import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 
 @Injectable()
 export class EnrichSubscriptionPayloadPipe implements PipeTransform {
   constructor(
-    private readonly planPricingService: PlanPricingService,
-    private readonly carrierService: CarrierResolverService,
+    private readonly planPricingService: PlanService,
+    private readonly paymentService: PaymentService,
     private readonly productService: ProductService,
   ) {}
 
@@ -20,11 +24,11 @@ export class EnrichSubscriptionPayloadPipe implements PipeTransform {
     const { msisdn, keyword, paymentProvider } = body;
 
     // Detect carrier/region
-    const { carrier, region } = await this.carrierService.resolve(msisdn);
+    // const { carrier, region } = await this.carrierService.resolve(msisdn);
 
     // Attach carrier info
-    body.carrier = carrier;
-    body.region = region;
+    // body.carrier = carrier;
+    // body.region = region;
 
     // Lookup product details (optional)
     const product = await this.productService.findByKeyword(keyword);

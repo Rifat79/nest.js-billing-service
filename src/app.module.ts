@@ -7,11 +7,12 @@ import { CacheModule } from './common/cache/cache.module';
 import appConfig from './config/app.config';
 import redisConfig from './config/redis.config';
 import rmqConfig from './config/rmq.config';
+import { PrismaModule } from './database/prisma.module';
 import { LoggerModule } from './logger/logger.module';
+import { PaymentModule } from './payment/payment.module';
 import { PlanModule } from './plan/plan.module';
 import { ProductModule } from './product/product.module';
 import { SubscriptionsModule } from './subscription/subscription.module';
-import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -52,6 +53,8 @@ import { PaymentModule } from './payment/payment.module';
 
     // Logger
     LoggerModule,
+
+    PrismaModule,
 
     SubscriptionsModule,
 
