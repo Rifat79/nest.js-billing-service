@@ -13,8 +13,8 @@ export class SubscriptionsController {
     return this.subscriptionsService.createSubscription(data);
   }
 
-  @MessagePattern({ cmd: BillingMessagePatterns.CANCEL_SUBSCRIPTION })
-  async cancelSubscription(@Payload() data: any) {
-    return this.subscriptionsService.cancelSubscription(data);
-  }
+  // @MessagePattern({ cmd: BillingMessagePatterns.CANCEL_SUBSCRIPTION })
+  // async cancelSubscription(@Payload() data: any) {
+  //   return this.subscriptionsService.cancelSubscription(data);
+  // }
 }

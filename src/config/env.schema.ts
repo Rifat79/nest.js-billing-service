@@ -31,8 +31,8 @@ export const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .url({ message: 'DATABASE_URL must be a valid URL' })
-    .refine((url) => url.startsWith('postgresql://'), {
-      message: 'DATABASE_URL must start with "postgresql://"',
+    .refine((url) => url.startsWith('postgres://'), {
+      message: 'DATABASE_URL must start with "postgres://"',
     }),
   DB_CONNECTION_LIMIT: z.coerce.number().int().positive(),
   DB_POOL_TIMEOUT: z.coerce.number().int().positive(),
