@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RedisModule } from './common/redis/redis.module';
 import appConfig from './config/app.config';
+import dbConfig from './config/db.config';
 import redisConfig from './config/redis.config';
 import rmqConfig from './config/rmq.config';
 import { PrismaModule } from './database/prisma.module';
@@ -19,7 +20,7 @@ import { SubscriptionsModule } from './subscription/subscription.module';
     // Configurations
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, redisConfig, rmqConfig],
+      load: [appConfig, redisConfig, rmqConfig, dbConfig],
     }),
 
     // Cache
