@@ -2,11 +2,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { Logger, PinoLogger } from 'nestjs-pino';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
-import { PrismaClientExceptionFilter } from './common/filters/prisma-exception.filter';
-import { PrismaInitializationExceptionFilter } from './common/filters/prisma-initialization-exception.filter';
-import { PrismaValidationExceptionFilter } from './common/filters/prisma-validation-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -37,14 +34,6 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
     }),
-  );
-
-  // Global Prisma exception filters
-  const pLogger = await app.resolve(PinoLogger);
-  app.useGlobalFilters(
-    new PrismaClientExceptionFilter(pLogger),
-    new PrismaValidationExceptionFilter(pLogger),
-    new PrismaInitializationExceptionFilter(pLogger),
   );
 
   // Graceful shutdown

@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 
 type PrismaQueryEvent = {
@@ -43,6 +43,10 @@ export class PrismaService
   $on!: (event: any, callback: any) => void;
   $use!: (middleware: any) => void;
   $queryRaw!: (query: any) => Promise<any>;
+  $transaction!: <T>(
+    fn: (prisma: Prisma.TransactionClient) => Promise<T>,
+    options?: Parameters<PrismaClient['$transaction']>[1],
+  ) => Promise<T>;
 
   private readonly logger = new Logger(PrismaService.name);
 

@@ -8,7 +8,7 @@ export class SubscriptionsService {
 
   async createSubscription(data: CreateSubscriptionDto) {
     try {
-      const { msisdn, transactionId, urls, paymentProvider, keyword } =
+      const { msisdn, transactionId, urls, paymentProvider, keyword, amount } =
         data.body;
     } catch (e) {
       this.logger.error({});

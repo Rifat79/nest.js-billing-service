@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CacheModule } from './common/cache/cache.module';
+import { RedisModule } from './common/redis/redis.module';
 import appConfig from './config/app.config';
 import redisConfig from './config/redis.config';
 import rmqConfig from './config/rmq.config';
@@ -23,7 +23,7 @@ import { SubscriptionsModule } from './subscription/subscription.module';
     }),
 
     // Cache
-    CacheModule,
+    RedisModule,
 
     // RabbitMQ Client for publishing events
     ClientsModule.registerAsync([

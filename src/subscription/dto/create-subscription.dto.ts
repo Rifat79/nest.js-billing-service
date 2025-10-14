@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsMobilePhone,
   IsNumber,
   IsObject,
   IsOptional,
@@ -10,11 +11,17 @@ import {
 } from 'class-validator';
 
 import { Transform, Type } from 'class-transformer';
-import { IsMobilePhone } from 'class-validator';
 import { PaymentProvider } from 'src/common/enums/payment-providers';
 
 export class SubscriptionBodyDto {
-  @Transform(({ value, obj }) => value ?? obj.transaction_id)
+  @Transform(
+    ({ value, obj }: { value: unknown; obj: Record<string, unknown> }) => {
+      // Safely access obj.transaction_id if it exists and is a string
+      if (value !== undefined && value !== null) return value;
+      if (typeof obj.transaction_id === 'string') return obj.transaction_id;
+      return undefined;
+    },
+  )
   @IsString()
   @Length(1, 64, {
     message: 'transactionId must be between 1 and 64 characters',
@@ -34,7 +41,10 @@ export class SubscriptionBodyDto {
   @IsMobilePhone('bn-BD')
   msisdn: string;
 
-  @ValidateIf((o) => o.paymentProvider !== PaymentProvider.BANGLALINK)
+  @ValidateIf(
+    (o: SubscriptionBodyDto) =>
+      o.paymentProvider !== PaymentProvider.BANGLALINK,
+  )
   @IsObject()
   urls?: {
     success: string;
@@ -50,7 +60,7 @@ export class CreateSubscriptionDto {
 
   @ValidateNested()
   @Type(() => SubscriptionBodyDto)
-  body?: SubscriptionBodyDto;
+  body: SubscriptionBodyDto;
 
   @IsObject()
   @IsOptional()

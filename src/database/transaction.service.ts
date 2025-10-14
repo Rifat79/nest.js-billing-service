@@ -3,6 +3,12 @@ import { Prisma } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from './prisma.service';
 
+type TransactionIsolationLevel =
+  | 'ReadUncommitted'
+  | 'ReadCommitted'
+  | 'RepeatableRead'
+  | 'Serializable';
+
 @Injectable()
 export class TransactionService {
   constructor(
@@ -15,7 +21,7 @@ export class TransactionService {
     options?: {
       maxWait?: number;
       timeout?: number;
-      isolationLevel?: Prisma.TransactionIsolationLevel;
+      isolationLevel?: TransactionIsolationLevel;
     },
   ): Promise<T> {
     const transactionId = this.generateTransactionId();
@@ -23,19 +29,21 @@ export class TransactionService {
     try {
       this.logger.info({ transactionId }, 'Transaction started');
 
-      const result = await this.prisma.$transaction(callback, {
+      const result = (await this.prisma.$transaction(callback, {
         maxWait: options?.maxWait || 5000,
         timeout: options?.timeout || 10000,
-        isolationLevel:
-          options?.isolationLevel ||
-          Prisma.TransactionIsolationLevel.ReadCommitted,
-      });
+        isolationLevel: options?.isolationLevel || 'ReadCommitted',
+      })) as T;
 
       this.logger.info({ transactionId }, 'Transaction committed successfully');
       return result;
     } catch (error) {
+      const errorMessage =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message: string }).message
+          : String(error);
       this.logger.error(
-        { transactionId, error },
+        { transactionId, error: errorMessage },
         'Transaction rolled back due to error',
       );
       throw error;
@@ -53,11 +61,20 @@ export class TransactionService {
       try {
         return await operation();
       } catch (error) {
-        lastError = error;
+        lastError = error as Error;
 
         if (this.isRetryableError(error) && attempt < maxRetries) {
           this.logger.warn(
-            { attempt, maxRetries, error: error.message },
+            {
+              attempt,
+              maxRetries,
+              error:
+                typeof error === 'object' &&
+                error !== null &&
+                'message' in error
+                  ? (error as { message: string }).message
+                  : String(error),
+            },
             'Retrying operation after error',
           );
           await this.delay(delayMs * attempt);
@@ -82,7 +99,7 @@ export class TransactionService {
   }
 
   private generateTransactionId(): string {
-    return `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `tx_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 
   private delay(ms: number): Promise<void> {

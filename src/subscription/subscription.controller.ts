@@ -2,7 +2,6 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { BillingMessagePatterns } from 'src/common/enums/message-patterns';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { EnrichSubscriptionPayloadPipe } from './pipes/enrich-subscription-payload.pipe';
 import { SubscriptionsService } from './subscription.service';
 
 @Controller()
@@ -10,9 +9,7 @@ export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
   @MessagePattern({ cmd: BillingMessagePatterns.CREATE_SUBSCRIPTION })
-  async createSubscription(
-    @Payload(new EnrichSubscriptionPayloadPipe()) data: CreateSubscriptionDto,
-  ) {
+  async createSubscription(@Payload() data: CreateSubscriptionDto) {
     return this.subscriptionsService.createSubscription(data);
   }
 

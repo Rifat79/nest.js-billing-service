@@ -1,1 +1,4 @@
-{ "window.zoomLevel": 1 }
+{
+  "window.zoomLevel": 0.75,
+  "cSpell.words": ["retryable"]
+}
