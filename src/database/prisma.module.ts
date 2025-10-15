@@ -1,5 +1,7 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PaymentChannelRepository } from './payment-channel.repository';
+import { PlanRepository } from './plan.repository';
 import { PrismaBatchService } from './prisma-batch.service';
 import { PrismaService } from './prisma.service';
 import { ProductRepository } from './product.repository';
@@ -27,7 +29,10 @@ export class PrismaModule {
           provide: 'SERVICE_NAME',
           useValue: options?.serviceName || 'default-service',
         },
+        // Repositories
         ProductRepository,
+        PaymentChannelRepository,
+        PlanRepository,
       ],
       exports: [
         PrismaService,
@@ -35,6 +40,10 @@ export class PrismaModule {
         TransactionService,
         PrismaBatchService,
         ProductRepository,
+        // Repositories
+        ProductRepository,
+        PaymentChannelRepository,
+        PlanRepository,
       ],
     };
   }
@@ -45,15 +54,22 @@ export class PrismaModule {
       imports: [ConfigModule],
       providers: [
         PrismaService,
-        ProductRepository,
         TransactionService,
         PrismaBatchService,
+        // Repositories
+        ProductRepository,
+        PaymentChannelRepository,
+        PlanRepository,
       ],
       exports: [
         PrismaService,
         ProductRepository,
         TransactionService,
         PrismaBatchService,
+        // Repositories
+        ProductRepository,
+        PaymentChannelRepository,
+        PlanRepository,
       ],
     };
   }

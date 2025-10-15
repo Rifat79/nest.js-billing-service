@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { PinoLogger } from 'nestjs-pino';
-import { REDIS_CLIENT } from './redis.module';
+import { REDIS_CLIENT } from './redis.constants';
 
 // Define the expected return types for the rate limit pipeline for explicit safety
 // [zremrangebyscore, zadd, zcard, expire]

@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis, { Redis as RedisClient, RedisOptions } from 'ioredis';
+import { REDIS_CLIENT, REDIS_SUBSCRIBER } from './redis.constants';
+import { RedisService } from './redis.service';
 
 // Type definition for Redis configuration properties for better type safety
 interface RedisConfig {
@@ -15,9 +17,6 @@ interface TLS {
   rejectUnauthorized: boolean;
   // You might add other properties from Node.js 'tls' module like 'ca', 'key', 'cert' if needed
 }
-
-export const REDIS_CLIENT = 'REDIS_CLIENT';
-export const REDIS_SUBSCRIBER = 'REDIS_SUBSCRIBER';
 
 @Global()
 @Module({
@@ -105,7 +104,8 @@ export const REDIS_SUBSCRIBER = 'REDIS_SUBSCRIBER';
       },
       inject: [ConfigService],
     },
+    RedisService,
   ],
-  exports: [REDIS_CLIENT, REDIS_SUBSCRIBER],
+  exports: [REDIS_CLIENT, REDIS_SUBSCRIBER, RedisService],
 })
 export class RedisModule {}

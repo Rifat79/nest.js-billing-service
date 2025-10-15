@@ -1,4 +1,41 @@
 import { Injectable } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
+import { RedisService } from 'src/common/redis/redis.service';
+import { PaymentChannelRepository } from 'src/database/payment-channel.repository';
 
 @Injectable()
-export class PaymentService {}
+export class PaymentService {
+  constructor(
+    private readonly logger: PinoLogger,
+    private readonly redis: RedisService,
+    private readonly paymentChannelRepo: PaymentChannelRepository,
+  ) {}
+
+  async getPaymentChannel(code: string) {
+    try {
+      const redisKey = `payment_channels:${code}`;
+      const cache = await this.redis.get(redisKey);
+
+      if (cache && typeof cache === 'string') {
+        this.logger.debug(`Cache hit for payment channel: ${code}`);
+        return JSON.parse(cache);
+      }
+
+      const paymentChannel =
+        await this.paymentChannelRepo.findByChannelCode(code);
+      if (!paymentChannel) {
+        this.logger.warn(`Payment channel not found for code: ${code}`);
+        return null; // or throw, depending on business logic
+      }
+
+      await this.redis.set(redisKey, JSON.stringify(paymentChannel));
+      return paymentChannel;
+    } catch (error) {
+      this.logger.error(`Error retrieving payment channel for code ${code}`, {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+}
