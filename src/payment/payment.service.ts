@@ -16,9 +16,9 @@ export class PaymentService {
       const redisKey = `payment_channels:${code}`;
       const cache = await this.redis.get(redisKey);
 
-      if (cache && typeof cache === 'string') {
+      if (cache) {
         this.logger.debug(`Cache hit for payment channel: ${code}`);
-        return JSON.parse(cache);
+        return cache;
       }
 
       const paymentChannel =

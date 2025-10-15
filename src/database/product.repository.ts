@@ -31,7 +31,37 @@ export class ProductRepository extends BaseRepository<
     return (client || this.prisma.client).products;
   }
 
-  async findByName(name: string): Promise<products | null> {
-    return this.findFirst({ name });
+  async findProductWithPlanAndPricing(
+    name: string,
+    paymentChannelId: number,
+    pricingAmount: number,
+  ) {
+    return this.findFirst({
+      where: {
+        name,
+        plans: {
+          some: {
+            plan_pricing: {
+              some: {
+                carrier_id: paymentChannelId,
+                price: pricingAmount,
+              },
+            },
+          },
+        },
+      },
+      include: {
+        plans: {
+          include: {
+            plan_pricing: {
+              where: {
+                carrier_id: paymentChannelId,
+                price: pricingAmount,
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }

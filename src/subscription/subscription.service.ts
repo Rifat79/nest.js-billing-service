@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { RedisService } from 'src/common/redis/redis.service';
-import { ProductRepository } from 'src/database/product.repository';
+import { PaymentService } from 'src/payment/payment.service';
+import { ProductService } from 'src/product/product.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
     private readonly logger: PinoLogger,
-    private readonly productRepo: ProductRepository,
-    private readonly redis: RedisService,
+    private readonly productService: ProductService,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async createSubscription(
@@ -19,11 +19,14 @@ export class SubscriptionsService {
       const { msisdn, transactionId, urls, paymentProvider, keyword, amount } =
         data.body;
 
-      const product = await this.productRepo.findByName(keyword);
+      const paymentChannel =
+        await this.paymentService.getPaymentChannel(paymentProvider);
 
-      if (!product) {
-        throw new Error(`Product with keyword "${keyword}" was not found`);
-      }
+      const product = await this.productService.getProductPlanWithPricing(
+        keyword,
+        amount,
+        paymentChannel.id,
+      );
 
       return { url: '' };
     } catch (e) {
