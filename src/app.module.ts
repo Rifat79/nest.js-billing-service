@@ -55,7 +55,10 @@ import { SubscriptionsModule } from './subscription/subscription.module';
     // Logger
     LoggerModule,
 
-    PrismaModule,
+    PrismaModule.forRoot({
+      isGlobal: true,
+      serviceName: 'billing-service',
+    }),
 
     SubscriptionsModule,
 

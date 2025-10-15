@@ -29,7 +29,9 @@ export abstract class BaseRepository<
    *
    * @param client The PrismaService instance or a transaction client.
    */
-  protected abstract getDelegate(client: Prisma.TransactionClient): M;
+  protected abstract getDelegate(
+    client: PrismaService | Prisma.TransactionClient,
+  ): M;
 
   async create(data: CreateInput, tx?: Prisma.TransactionClient): Promise<T> {
     const client = tx || this.prisma;

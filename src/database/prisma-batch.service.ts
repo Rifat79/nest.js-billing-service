@@ -13,7 +13,7 @@ export class PrismaBatchService {
   async batchCreate<T>(
     model: string,
     data: any[],
-    batchSize = 1000,
+    batchSize: number = 1000,
   ): Promise<void> {
     const totalBatches = Math.ceil(data.length / batchSize);
 
@@ -37,7 +37,11 @@ export class PrismaBatchService {
         );
       } catch (error) {
         this.logger.error(
-          { model, batchNumber: i + 1, error },
+          {
+            model,
+            batchNumber: i + 1,
+            error,
+          },
           'Batch insert failed',
         );
         throw error;
@@ -48,7 +52,7 @@ export class PrismaBatchService {
   async batchUpdate<T>(
     model: string,
     updates: Array<{ where: any; data: any }>,
-    batchSize = 100,
+    batchSize: number = 100,
   ): Promise<void> {
     const totalBatches = Math.ceil(updates.length / batchSize);
 
@@ -76,7 +80,11 @@ export class PrismaBatchService {
         );
       } catch (error) {
         this.logger.error(
-          { model, batchNumber: i + 1, error },
+          {
+            model,
+            batchNumber: i + 1,
+            error,
+          },
           'Batch update failed',
         );
         throw error;
@@ -87,8 +95,8 @@ export class PrismaBatchService {
   async batchDelete(
     model: string,
     ids: string[],
-    batchSize = 1000,
-    hardDelete = false,
+    batchSize: number = 1000,
+    hardDelete: boolean = false,
   ): Promise<void> {
     const totalBatches = Math.ceil(ids.length / batchSize);
 
@@ -101,7 +109,11 @@ export class PrismaBatchService {
           : this.prisma.client;
 
         await (client as any)[model].deleteMany({
-          where: { id: { in: batch } },
+          where: {
+            id: {
+              in: batch,
+            },
+          },
         });
 
         this.logger.info(
@@ -116,7 +128,11 @@ export class PrismaBatchService {
         );
       } catch (error) {
         this.logger.error(
-          { model, batchNumber: i + 1, error },
+          {
+            model,
+            batchNumber: i + 1,
+            error,
+          },
           'Batch delete failed',
         );
         throw error;

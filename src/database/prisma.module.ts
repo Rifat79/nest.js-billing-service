@@ -1,9 +1,7 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaBatchService } from './prisma-batch.service';
-import { PrismaHealthIndicator } from './prisma-health.indicator';
 import { PrismaService } from './prisma.service';
-import { TransactionService } from './transaction.service';
+import { ProductRepository } from './product.repository';
 
 export interface PrismaModuleOptions {
   isGlobal?: boolean;
@@ -20,19 +18,21 @@ export class PrismaModule {
       imports: [ConfigModule],
       providers: [
         PrismaService,
-        PrismaHealthIndicator,
-        TransactionService,
-        PrismaBatchService,
+        // PrismaHealthIndicator,
+        // TransactionService,
+        // PrismaBatchService,
         {
           provide: 'SERVICE_NAME',
           useValue: options?.serviceName || 'default-service',
         },
+        ProductRepository,
       ],
       exports: [
         PrismaService,
-        PrismaHealthIndicator,
-        TransactionService,
-        PrismaBatchService,
+        // PrismaHealthIndicator,
+        // TransactionService,
+        // PrismaBatchService,
+        ProductRepository,
       ],
     };
   }
@@ -41,8 +41,14 @@ export class PrismaModule {
     return {
       module: PrismaModule,
       imports: [ConfigModule],
-      providers: [PrismaService, TransactionService, PrismaBatchService],
-      exports: [PrismaService, TransactionService, PrismaBatchService],
+      providers: [
+        PrismaService,
+        ProductRepository /*TransactionService, PrismaBatchService*/,
+      ],
+      exports: [
+        PrismaService,
+        ProductRepository /*TransactionService, PrismaBatchService*/,
+      ],
     };
   }
 }
