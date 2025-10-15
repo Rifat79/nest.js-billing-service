@@ -6,18 +6,18 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const configService = app.get(ConfigService);
   const logger = app.get(Logger);
+
   app.useLogger(logger);
 
-  const configService = app.get(ConfigService);
   const host = configService.getOrThrow<string>('app.host');
   const port = configService.getOrThrow<number>('app.port');
   const httpPort = configService.getOrThrow<number>('app.httpPort');
 
   // TCP Microservice for receiving requests from API Gateway
-  app.connectMicroservice<MicroserviceOptions>({
+  const microserviceOptions: MicroserviceOptions = {
     transport: Transport.TCP,
     options: {
       host,
@@ -25,7 +25,8 @@ async function bootstrap() {
       retryAttempts: 5,
       retryDelay: 3000,
     },
-  });
+  };
+  app.connectMicroservice<MicroserviceOptions>(microserviceOptions);
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -33,8 +34,14 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
+
+  // Enable graceful shutdown
+  app.enableShutdownHooks();
 
   // Graceful shutdown
 
@@ -68,7 +75,12 @@ async function bootstrap() {
 
   await app.listen(httpPort);
 
-  logger.log(`🚀 Billing service is running on: http://${host}:${port}`);
+  const serviceName = configService.get<string>(
+    'SERVICE_NAME',
+    'billing-service',
+  );
+
+  logger.log(`🚀 ${serviceName} is running on: http://${host}:${port}`);
 }
 
 bootstrap().catch((error) => {
