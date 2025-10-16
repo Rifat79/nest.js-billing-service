@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { payment_channels } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { RedisService } from 'src/common/redis/redis.service';
 import { PaymentChannelRepository } from 'src/database/payment-channel.repository';
@@ -11,10 +12,10 @@ export class PaymentService {
     private readonly paymentChannelRepo: PaymentChannelRepository,
   ) {}
 
-  async getPaymentChannel(code: string) {
+  async getPaymentChannel(code: string): Promise<payment_channels | null> {
     try {
       const redisKey = `payment_channels:${code}`;
-      const cache = await this.redis.get(redisKey);
+      const cache = await this.redis.get<payment_channels>(redisKey);
 
       if (cache) {
         this.logger.debug(`Cache hit for payment channel: ${code}`);

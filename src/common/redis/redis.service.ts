@@ -28,8 +28,15 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    this.logger.info('Shutting down Redis client connection...');
-    await this.redis.quit();
+    try {
+      this.logger.info('Shutting down Redis client connection...');
+      await this.redis.quit();
+    } catch (error) {
+      this.logger.error(
+        { error: String(error) },
+        'Error while redis shut down',
+      );
+    }
   }
 
   // ============================================

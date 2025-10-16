@@ -36,7 +36,7 @@ export class ProductRepository extends BaseRepository<
     paymentChannelId: number,
     pricingAmount: number,
   ) {
-    return this.findFirst({
+    return this.getDelegate().findFirst({
       where: {
         name,
         plans: {

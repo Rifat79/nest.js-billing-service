@@ -36,7 +36,7 @@ export class ProductService {
         );
 
       if (!productWithPlan) {
-        throw Error();
+        throw Error('Plan was not found');
       }
 
       this.redis.set(redisKey, productWithPlan);

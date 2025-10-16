@@ -22,6 +22,10 @@ export class SubscriptionsService {
       const paymentChannel =
         await this.paymentService.getPaymentChannel(paymentProvider);
 
+      if (!paymentChannel) {
+        throw new Error('payment channel was not found');
+      }
+
       const product = await this.productService.getProductPlanWithPricing(
         keyword,
         amount,
