@@ -13,7 +13,7 @@ export class PaymentChannelRepository extends BaseRepository<
   Prisma.payment_channelsWhereInput,
   Prisma.payment_channelsWhereUniqueInput
 > {
-  protected readonly modelName = 'PaymentChannels';
+  protected readonly modelName = 'payment_channels';
 
   constructor(
     prisma: PrismaService,
@@ -23,11 +23,16 @@ export class PaymentChannelRepository extends BaseRepository<
     super(prisma, logger);
   }
 
-  protected getDelegate(client?: any) {
-    return (client || this.prisma.client).payment_channels;
+  protected getDelegate(
+    client: PrismaService | Prisma.TransactionClient,
+  ): Prisma.payment_channelsDelegate {
+    const prismaClient =
+      client instanceof PrismaService ? client.client : client;
+
+    return prismaClient.payment_channels;
   }
 
   async findByChannelCode(code: string): Promise<payment_channels | null> {
-    return this.findFirst({ code });
+    return this.findUnique({ code });
   }
 }

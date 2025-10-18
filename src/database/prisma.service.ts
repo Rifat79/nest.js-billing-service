@@ -16,8 +16,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public client: PrismaClient; // Extended client with all extensions
 
   constructor(
-    private configService: ConfigService,
-    private pinoLogger: PinoLogger,
+    private readonly configService: ConfigService,
+    private readonly pinoLogger: PinoLogger,
   ) {
     this.serviceName = configService.get<string>(
       'SERVICE_NAME',

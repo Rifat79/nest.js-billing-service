@@ -13,7 +13,7 @@ export class PlanPricingRepository extends BaseRepository<
   Prisma.plan_pricingWhereInput,
   Prisma.plan_pricingWhereUniqueInput
 > {
-  protected readonly modelName = 'PlanPricing';
+  protected readonly modelName = 'plan_pricing';
 
   constructor(
     prisma: PrismaService,
@@ -23,11 +23,12 @@ export class PlanPricingRepository extends BaseRepository<
     super(prisma, logger);
   }
 
-  /**
-   * Returns the delegate for Prisma PlanPricing model.
-   * Supports both normal and transactional Prisma clients.
-   */
-  protected getDelegate(client?: any) {
-    return (client || this.prisma.client).plan_pricing;
+  protected getDelegate(
+    client: PrismaService | Prisma.TransactionClient,
+  ): Prisma.plan_pricingDelegate {
+    const prismaClient =
+      client instanceof PrismaService ? client.client : client;
+
+    return prismaClient.plan_pricing;
   }
 }

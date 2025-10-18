@@ -6,6 +6,7 @@ export const envSchema = z.object({
   BILLING_SERVICE_HOST: z.string().min(1),
   BILLING_SERVICE_PORT: z.coerce.number().int().positive(),
   BILLING_SERVICE_HTTP_PORT: z.coerce.number().int().positive(),
+  SERVICE_NAME: z.string().default('billing-service'),
 
   // redis
   REDIS_HOST: z.string().min(1, 'REDIS_HOST cannot be empty'),

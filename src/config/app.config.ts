@@ -7,5 +7,6 @@ export default registerAs('app', () => {
     host: validatedEnv.BILLING_SERVICE_HOST,
     port: validatedEnv.BILLING_SERVICE_PORT,
     httpPort: validatedEnv.BILLING_SERVICE_HTTP_PORT,
+    serviceName: validatedEnv.SERVICE_NAME,
   };
 });

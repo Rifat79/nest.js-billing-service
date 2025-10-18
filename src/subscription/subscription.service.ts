@@ -32,6 +32,10 @@ export class SubscriptionsService {
         paymentChannel.id,
       );
 
+      if (!product) {
+        throw new Error('product was not found');
+      }
+
       return { url: '' };
     } catch (e) {
       this.logger.error({});

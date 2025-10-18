@@ -20,28 +20,26 @@ export class ProductService {
     pricingAmount: number,
     paymentChannelId: number,
   ) {
-    try {
-      const redisKey = `product_plan_pricing:${name}:${paymentChannelId}:${pricingAmount}`;
-      const cache = await this.redis.get(redisKey);
+    const redisKey = `product_plan_pricing:${name}:${paymentChannelId}:${pricingAmount}`;
+    const cache = await this.redis.get(redisKey);
 
-      if (cache) {
-        return cache;
-      }
-
-      const productWithPlan =
-        await this.productRepo.findProductWithPlanAndPricing(
-          name,
-          paymentChannelId,
-          pricingAmount,
-        );
-
-      if (!productWithPlan) {
-        throw Error('Plan was not found');
-      }
-
-      this.redis.set(redisKey, productWithPlan);
-    } catch (error) {
-      throw error;
+    if (cache) {
+      return cache;
     }
+
+    const productWithPlan =
+      await this.productRepo.findProductWithPlanAndPricing(
+        name,
+        paymentChannelId,
+        pricingAmount,
+      );
+
+    if (!productWithPlan) {
+      throw new Error('Plan was not found');
+    }
+
+    await this.redis.set(redisKey, productWithPlan);
+
+    return productWithPlan;
   }
 }

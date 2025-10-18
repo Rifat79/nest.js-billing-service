@@ -55,18 +55,18 @@ model blacklist {
 }
 
 model charging_configurations {
-  id               Int              @id @default(autoincrement())
-  carrier_id       Int
-  product_id       Int
-  plan_id          Int?
-  config           Json
-  created_at       DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?        @default(now()) @db.Timestamp(6)
-  payment_channels payment_channels @relation(fields: [carrier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_plans    product_plans?   @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products         products         @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                 Int              @id @default(autoincrement())
+  payment_channel_id Int
+  product_id         Int
+  plan_id            Int?
+  config             Json
+  created_at         DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
+  payment_channels   payment_channels @relation(fields: [payment_channel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "charging_configurations_carrier_id_fkey")
+  product_plans      product_plans?   @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products           products         @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([carrier_id, product_id, plan_id])
+  @@unique([payment_channel_id, product_id, plan_id], map: "charging_configurations_carrier_id_product_id_plan_id_key")
 }
 
 model countries {
@@ -175,8 +175,8 @@ model payment_channels {
 model plan_pricing {
   id                   Int               @id @default(autoincrement())
   plan_id              Int
-  carrier_id           Int?
-  price                Decimal           @db.Decimal(10, 2)
+  payment_channel_id   Int?
+  base_amount          Decimal           @db.Decimal(10, 2)
   vat_percentage       Decimal?          @default(0) @db.Decimal(5, 2)
   currency             String            @db.Char(3)
   effective_from       DateTime          @db.Date
@@ -187,12 +187,12 @@ model plan_pricing {
   promotion_end_date   DateTime?         @db.Date
   created_at           DateTime?         @default(now()) @db.Timestamptz(6)
   updated_at           DateTime?         @default(now()) @db.Timestamptz(6)
-  payment_channels     payment_channels? @relation(fields: [carrier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payment_channels     payment_channels? @relation(fields: [payment_channel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "plan_pricing_carrier_id_fkey")
   product_plans        product_plans     @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([carrier_id, is_active], map: "idx_carrier_pricing")
+  @@index([payment_channel_id, is_active], map: "idx_carrier_pricing")
   @@index([effective_from, effective_to], map: "idx_effective_dates")
-  @@index([plan_id, carrier_id, is_active], map: "idx_plan_carrier_active")
+  @@index([plan_id, payment_channel_id, is_active], map: "idx_plan_carrier_active")
 }
 
 model product_categories {

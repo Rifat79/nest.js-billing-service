@@ -13,7 +13,7 @@ export class ProductRepository extends BaseRepository<
   Prisma.productsWhereInput,
   Prisma.productsWhereUniqueInput
 > {
-  protected readonly modelName = 'Product';
+  protected readonly modelName = 'products';
 
   constructor(
     prisma: PrismaService,
@@ -27,8 +27,14 @@ export class ProductRepository extends BaseRepository<
    * Returns the delegate for Prisma Product model.
    * Supports both normal and transactional Prisma clients.
    */
-  protected getDelegate(client?: any) {
-    return (client || this.prisma.client).products;
+  protected getDelegate(
+    client?: PrismaService | Prisma.TransactionClient,
+  ): Prisma.productsDelegate {
+    const prismaClient =
+      client instanceof PrismaService
+        ? client.client
+        : (client ?? this.prisma.client);
+    return prismaClient.products;
   }
 
   async findProductWithPlanAndPricing(
@@ -39,24 +45,24 @@ export class ProductRepository extends BaseRepository<
     return this.getDelegate().findFirst({
       where: {
         name,
-        plans: {
+        product_plans: {
           some: {
             plan_pricing: {
               some: {
-                carrier_id: paymentChannelId,
-                price: pricingAmount,
+                payment_channel_id: paymentChannelId,
+                base_amount: pricingAmount,
               },
             },
           },
         },
       },
       include: {
-        plans: {
+        product_plans: {
           include: {
             plan_pricing: {
               where: {
-                carrier_id: paymentChannelId,
-                price: pricingAmount,
+                payment_channel_id: paymentChannelId,
+                base_amount: pricingAmount,
               },
             },
           },
