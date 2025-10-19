@@ -8,5 +8,6 @@ export default registerAs('app', () => {
     port: validatedEnv.BILLING_SERVICE_PORT,
     httpPort: validatedEnv.BILLING_SERVICE_HTTP_PORT,
     serviceName: validatedEnv.SERVICE_NAME,
+    apiGwBaseUrl: validatedEnv.API_GW_BASE_URL,
   };
 });

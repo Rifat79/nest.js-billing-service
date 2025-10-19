@@ -4,6 +4,15 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { BaseRepository } from './base.repository';
 import { PrismaService } from './prisma.service';
 
+export type ProductWithPlanAndPricing = Prisma.productsGetPayload<{
+  include: {
+    product_plans: {
+      include: {
+        plan_pricing: true;
+      };
+    };
+  };
+}>;
 @Injectable()
 export class ProductRepository extends BaseRepository<
   products,
@@ -41,7 +50,7 @@ export class ProductRepository extends BaseRepository<
     name: string,
     paymentChannelId: number,
     pricingAmount: number,
-  ) {
+  ): Promise<ProductWithPlanAndPricing | null> {
     return this.getDelegate().findFirst({
       where: {
         name,

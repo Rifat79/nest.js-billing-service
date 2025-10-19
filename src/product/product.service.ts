@@ -3,7 +3,10 @@ import { PinoLogger } from 'nestjs-pino';
 import { RedisService } from 'src/common/redis/redis.service';
 import { PlanPricingRepository } from 'src/database/plan-pricing.repository';
 import { PlanRepository } from 'src/database/plan.repository';
-import { ProductRepository } from 'src/database/product.repository';
+import {
+  ProductRepository,
+  ProductWithPlanAndPricing,
+} from 'src/database/product.repository';
 
 @Injectable()
 export class ProductService {
@@ -19,9 +22,9 @@ export class ProductService {
     name: string,
     pricingAmount: number,
     paymentChannelId: number,
-  ) {
+  ): Promise<ProductWithPlanAndPricing | null> {
     const redisKey = `product_plan_pricing:${name}:${paymentChannelId}:${pricingAmount}`;
-    const cache = await this.redis.get(redisKey);
+    const cache = (await this.redis.get(redisKey)) as ProductWithPlanAndPricing;
 
     if (cache) {
       return cache;

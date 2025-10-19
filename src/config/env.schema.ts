@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const envSchema = z.object({
   // app
   NODE_ENV: z.enum(['development', 'production', 'test', 'staging']),
+  API_GW_BASE_URL: z.string().url(),
   BILLING_SERVICE_HOST: z.string().min(1),
   BILLING_SERVICE_PORT: z.coerce.number().int().positive(),
   BILLING_SERVICE_HTTP_PORT: z.coerce.number().int().positive(),

@@ -19,7 +19,7 @@ import { EventPublisherService } from './event-publisher.service';
               durable: true,
               arguments: {
                 'x-message-ttl': 86400000, // 24 hours
-                'x-dead-letter-exchange': 'dlx.notifications',
+                'x-dead-letter-exchange': 'dlx.subscription.notifications',
               },
             },
             prefetchCount: 10,
