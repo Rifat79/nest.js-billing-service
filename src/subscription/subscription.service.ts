@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { RedisService } from 'src/common/redis/redis.service';
 import { PaymentService } from 'src/payment/payment.service';
 import { ProductService } from 'src/product/product.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +12,7 @@ export class SubscriptionsService {
     private readonly logger: PinoLogger,
     private readonly productService: ProductService,
     private readonly paymentService: PaymentService,
+    private readonly redis: RedisService,
   ) {}
 
   async createSubscription(
@@ -61,10 +63,28 @@ export class SubscriptionsService {
         durationCountDays: product.product_plans[0].billing_cycle_days,
       };
 
-      return await this.paymentService.getChargingUrl(getChargeUrlPayload);
-    } catch (e) {
-      this.logger.error({});
-      throw e;
+      const url = await this.paymentService.getChargingUrl(getChargeUrlPayload);
+
+      const subscriptionData = {
+        subscription_id: subscriptionId,
+        msisdn,
+        payment_channel_id: paymentChannel.id,
+        merchant_id: product.merchant_id,
+        product_id: product.id,
+        plan_id: product.product_plans[0].id,
+        plan_pricing_id: product.product_plans[0].plan_pricing[0].id,
+        merchant_transaction_id: transactionId,
+        status: 'PENDING_CONSENT',
+        auto_renew: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      await this.redis.set(`subscriptions:${subscriptionId}`, subscriptionData);
+
+      return url;
+    } catch (error) {
+      this.logger.error(error, 'Catch block error in createSubscription');
+      throw error;
     }
   }
 

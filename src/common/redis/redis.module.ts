@@ -10,6 +10,7 @@ interface RedisConfig {
   port: number;
   password?: string; // Password can be undefined
   db: number;
+  keyPrefix: string;
   tlsEnabled: boolean;
 }
 
@@ -28,8 +29,12 @@ interface TLS {
         const getRedisConfig = (): RedisConfig => ({
           host: configService.get<string>('redis.host', 'localhost'),
           port: configService.get<number>('redis.port', 6379),
-          password: configService.get<string>('redis.password'), // This can be undefined
+          password: configService.get<string>('redis.password'),
           db: configService.get<number>('redis.db', 0),
+          keyPrefix: configService.get<string>(
+            'redis.keyPrefix',
+            'dcb_billing:',
+          ),
           // Ensure tlsEnabled is strictly a boolean
           tlsEnabled: configService.get<string>('redis.tlsEnabled') === 'true',
         });

@@ -24,7 +24,7 @@ import { EventPublisherService } from './event-publisher.service';
             },
             prefetchCount: 10,
             persistent: true,
-            noAck: false,
+            noAck: true,
           },
         }),
         inject: [ConfigService],

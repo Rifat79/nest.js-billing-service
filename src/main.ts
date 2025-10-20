@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/rpc-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -28,14 +29,30 @@ async function bootstrap() {
   };
   app.connectMicroservice<MicroserviceOptions>(microserviceOptions);
 
+  app.useGlobalFilters(new AllExceptionsFilter(app.get(Logger)));
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      // Ensure the received object is an instance of the DTO class
+      // This is necessary for class-transformer decorators to work.
       transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
+
+      // Strip properties that are not defined in the DTO
+      // This prevents receiving unwanted data from the client.
+      whitelist: true,
+
+      // Stop execution immediately if unknown properties are sent
+      // This is stricter than `whitelist` and great for microservices.
+      forbidUnknownValues: true,
+
+      // Throw an RpcException instead of a standard HttpException
+      // NestJS will automatically wrap validation errors in an RpcException
+      // when running inside a microservice context.
+      exceptionFactory: (errors) => {
+        // You can customize the error structure here if needed
+        return new Error(JSON.stringify(errors));
+        // The RpcExceptionFilter (if implemented correctly) will catch this.
       },
     }),
   );

@@ -8,7 +8,7 @@ import { SubscriptionsService } from './subscription.service';
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
-  @MessagePattern({ cmd: BillingMessagePatterns.CREATE_SUBSCRIPTION })
+  @MessagePattern(BillingMessagePatterns.CREATE_SUBSCRIPTION)
   async createSubscription(@Payload() data: CreateSubscriptionDto) {
     return this.subscriptionsService.createSubscription(data);
   }
