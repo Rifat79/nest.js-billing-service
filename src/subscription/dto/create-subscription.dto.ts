@@ -1,4 +1,5 @@
 import {
+  IsDefined,
   IsEnum,
   IsMobilePhone,
   IsNumber,
@@ -58,6 +59,7 @@ export class CreateSubscriptionDto {
   @IsOptional()
   headers?: Record<string, string>;
 
+  @IsDefined()
   @ValidateNested()
   @Type(() => SubscriptionBodyDto)
   body: SubscriptionBodyDto;
@@ -79,4 +81,8 @@ export class CreateSubscriptionDto {
   @IsOptional()
   @IsString()
   planPricingId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  timestamp?: number;
 }

@@ -40,6 +40,11 @@ export const envSchema = z.object({
   DB_POOL_TIMEOUT: z.coerce.number().int().positive(),
   DB_CONNECT_TIMEOUT: z.coerce.number().int().positive(),
 
+  // GP
+  GP_BASE_URL: z.string().url(),
+  GP_BASIC_AUTH_USER: z.string().min(1, 'User is required'),
+  GP_BASIC_AUTH_PASS: z.string().min(1, 'Password is required'),
+
   // log
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])

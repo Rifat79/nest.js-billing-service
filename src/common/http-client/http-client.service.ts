@@ -54,7 +54,7 @@ export class HttpClientService {
       .pipe(
         // 1. Retry Mechanism with Exponential Backoff
         retry({
-          count: 3, // Total 3 retries (4 attempts total)
+          count: 0, // Total 3 retries (4 attempts total)
           delay: (error, retryCount) => {
             // Calculate exponential wait time: 2^n * 1000ms (1s, 2s, 4s)
             const waitTime = Math.pow(2, retryCount) * 1000;
