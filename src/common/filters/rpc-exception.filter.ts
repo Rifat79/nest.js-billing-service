@@ -22,8 +22,8 @@ export class AllExceptionsFilter implements RpcExceptionFilter<any> {
 
   catch(exception: unknown, host: ArgumentsHost): Observable<any> {
     let errorToClient: any;
-    let logPayload: Record<string, any> = {
-      context: host.getType(),
+    const logPayload: Record<string, any> = {
+      context: String(host.getType()),
     };
 
     let logMessage = `RPC Exception Caught`;

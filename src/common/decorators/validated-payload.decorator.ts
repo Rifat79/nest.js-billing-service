@@ -22,7 +22,7 @@ export const ValidatedPayload = (validationPipe?: ValidationPipe) =>
         exceptionFactory: (errors) => {
           console.log('Validation Errors:', JSON.stringify(errors, null, 2));
           return new RpcException({
-            statusCode: 400,
+            status: 400,
             message: 'Validation failed',
             error: 'BAD_REQUEST',
             details: errors.map((err) => ({
