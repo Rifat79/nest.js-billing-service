@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/rpc-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -12,7 +11,7 @@ async function bootstrap() {
 
   app.useLogger(logger);
 
-  const host = configService.getOrThrow<string>('app.host');
+  const host = configService.getOrThrow<string>('app.host', '0.0.0.0');
   const port = configService.getOrThrow<number>('app.port');
   const httpPort = configService.getOrThrow<number>('app.httpPort');
 
@@ -29,8 +28,6 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>(microserviceOptions, {
     inheritAppConfig: true,
   });
-
-  app.useGlobalFilters(new AllExceptionsFilter(app.get(Logger)));
 
   // Enable graceful shutdown
   app.enableShutdownHooks();
@@ -72,7 +69,12 @@ async function bootstrap() {
     'billing-service',
   );
 
-  logger.log(`🚀 ${serviceName} is running on: http://${host}:${port}`);
+  logger.log(
+    `🚀 ${serviceName} is running on HTTP: http://${host}:${httpPort}`,
+  );
+  logger.log(
+    `🔗 ${serviceName} is listening for TCP microservice requests on: tcp://${host}:${port}`,
+  );
 }
 
 bootstrap().catch((error) => {

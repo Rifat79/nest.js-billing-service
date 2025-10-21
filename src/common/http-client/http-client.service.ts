@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { PinoLogger } from 'nestjs-pino';
 import { firstValueFrom, Observable, timer } from 'rxjs'; // Added 'timer'
@@ -12,9 +13,9 @@ import { catchError, map, retry } from 'rxjs/operators'; // Removed 'delay' oper
  * Thrown when an external API call fails, standardizing the response status
  * for upstream services (e.g., usually 502 Bad Gateway).
  */
-class ExternalApiFailureException extends HttpException {
-  constructor(message: string, status: HttpStatus = HttpStatus.BAD_GATEWAY) {
-    super(message, status);
+class ExternalApiFailureException extends RpcException {
+  constructor(message: string, status = 502) {
+    super({ status, message });
     this.name = 'ExternalApiFailureException';
   }
 }

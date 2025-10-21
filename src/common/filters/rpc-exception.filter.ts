@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { ValidationError } from 'class-validator';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import { Observable, throwError } from 'rxjs';
 
 const UNHANDLED_ERROR_RESPONSE = {
@@ -18,14 +18,9 @@ const UNHANDLED_ERROR_RESPONSE = {
 
 @Catch()
 export class AllExceptionsFilter implements RpcExceptionFilter<any> {
-  constructor(
-    @InjectPinoLogger(AllExceptionsFilter.name)
-    private readonly logger: PinoLogger,
-  ) {}
+  constructor(private readonly logger: PinoLogger) {}
 
   catch(exception: unknown, host: ArgumentsHost): Observable<any> {
-    console.log('🔥 EXCEPTION FILTER TRIGGERED');
-
     let errorToClient: any;
     let logPayload: Record<string, any> = {
       context: host.getType(),

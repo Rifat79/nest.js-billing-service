@@ -1,10 +1,12 @@
-import { Controller } from '@nestjs/common';
+import { Controller, UseFilters } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { ValidatedPayload } from 'src/common/decorators/validated-payload.decorator';
 import { BillingMessagePatterns } from 'src/common/enums/message-patterns';
+import { AllExceptionsFilter } from 'src/common/filters/rpc-exception.filter';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionsService } from './subscription.service';
 
+@UseFilters(AllExceptionsFilter)
 @Controller()
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}

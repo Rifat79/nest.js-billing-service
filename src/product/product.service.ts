@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { PinoLogger } from 'nestjs-pino';
 import { RedisService } from 'src/common/redis/redis.service';
-import { PlanPricingRepository } from 'src/database/plan-pricing.repository';
-import { PlanRepository } from 'src/database/plan.repository';
 import {
   ProductRepository,
   ProductWithPlanAndPricing,
 } from 'src/database/product.repository';
+
+class PlanNotFoundException extends RpcException {
+  constructor(message: string, status = 404) {
+    super({ status, message });
+    this.name = 'PlanNotFoundException';
+  }
+}
 
 @Injectable()
 export class ProductService {
@@ -14,8 +20,6 @@ export class ProductService {
     private readonly logger: PinoLogger,
     private readonly redis: RedisService,
     private readonly productRepo: ProductRepository,
-    private readonly planRepo: PlanRepository,
-    private readonly planPricingRepo: PlanPricingRepository,
   ) {}
 
   async getProductPlanWithPricing(
@@ -38,7 +42,7 @@ export class ProductService {
       );
 
     if (!productWithPlan) {
-      throw new Error('Plan was not found');
+      throw new PlanNotFoundException('Plan was not found');
     }
 
     await this.redis.set(redisKey, productWithPlan);
