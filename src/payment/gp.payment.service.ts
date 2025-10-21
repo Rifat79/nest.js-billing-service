@@ -56,7 +56,7 @@ export class GpPaymentService {
       } = data;
 
       const API_GATEWAY_BASE_URL =
-        this.configService.get<string>('apiGwBaseUrl');
+        this.configService.get<string>('app.apiGwBaseUrl');
       const url = this.config.baseUrl + '/partner/v3/consent/prepare';
 
       const payload = {
@@ -65,9 +65,9 @@ export class GpPaymentService {
         productDescription,
         subscriptionPeriod: this.getSubscriptionPeriod(durationCountDays),
         urls: {
-          ok: `${API_GATEWAY_BASE_URL}/api/v2/billing/callback/${subscriptionId}?status=success`,
-          deny: `${API_GATEWAY_BASE_URL}/api/v2/billing/callback/${subscriptionId}?status=cancel`,
-          error: `${API_GATEWAY_BASE_URL}/api/v2/billing/callback/${subscriptionId}?status=fail`,
+          ok: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=success`,
+          deny: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=cancel`,
+          error: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=fail`,
         },
         msisdn,
         merchant,
@@ -77,12 +77,10 @@ export class GpPaymentService {
       };
 
       const response: {
-        data: {
-          url: string;
-        };
+        url: string;
       } = await this.httpClient.post(url, payload, this.getAuthHeaders());
 
-      return response.data.url;
+      return response.url;
     } catch (error) {
       this.logger.error(error, 'Catch block error in prepareConsent');
       throw error;

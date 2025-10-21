@@ -38,6 +38,15 @@ export class SubscriptionBodyDto {
   @IsEnum(PaymentProvider)
   paymentProvider: PaymentProvider;
 
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const digits = value.replace(/\D/g, ''); // Remove non-digit characters
+      if (digits.length >= 10) {
+        return '880' + digits.slice(-10);
+      }
+    }
+    return value;
+  })
   @IsString()
   @IsMobilePhone('bn-BD')
   msisdn: string;
