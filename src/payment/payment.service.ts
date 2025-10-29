@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { payment_channels } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { RedisService } from 'src/common/redis/redis.service';
+import { ChargeConfigRepository } from 'src/database/charge-config.repository';
 import { PaymentChannelRepository } from 'src/database/payment-channel.repository';
+import { BanglalinkPaymentService } from './banglalink.payment.service';
 import { GpPaymentService } from './gp.payment.service';
 
 @Injectable()
@@ -11,8 +13,12 @@ export class PaymentService {
     private readonly logger: PinoLogger,
     private readonly redis: RedisService,
     private readonly gpPaymentService: GpPaymentService,
+    private readonly blPaymentService: BanglalinkPaymentService,
     private readonly paymentChannelRepo: PaymentChannelRepository,
-  ) {}
+    private readonly chargeConfigRepo: ChargeConfigRepository,
+  ) {
+    this.logger.setContext(PaymentService.name);
+  }
 
   async getPaymentChannel(code: string): Promise<payment_channels | null> {
     try {
@@ -52,6 +58,9 @@ export class PaymentService {
     initialPaymentAmount,
     durationCountDays,
     productDescription,
+    paymentChannelId,
+    productId,
+    planId,
   }: {
     msisdn: string;
     amount: number;
@@ -62,7 +71,24 @@ export class PaymentService {
     productDescription: string;
     initialPaymentAmount: number;
     durationCountDays: number;
+    paymentChannelId: number;
+    productId: number;
+    planId: number;
   }): Promise<{ url: string }> {
+    const chargeConfig = await this.chargeConfigRepo.findUnique({
+      payment_channel_id_product_id_plan_id: {
+        payment_channel_id: paymentChannelId,
+        plan_id: planId,
+        product_id: productId,
+      },
+    });
+
+    if (!chargeConfig) {
+      throw new Error(
+        `Charge config not found for channel=${paymentChannelId}, product=${productId}, plan=${planId}`,
+      );
+    }
+
     try {
       switch (paymentProvider) {
         case 'GP': {
@@ -82,6 +108,35 @@ export class PaymentService {
           } else {
             throw new Error('No URL returned from GP payment service');
           }
+
+          break;
+        }
+
+        case 'BL': {
+          const blChargeUrl = await this.blPaymentService.initActivation({
+            msisdn,
+            amount,
+            requestId: subscriptionId,
+            chargeConfig: chargeConfig,
+          });
+
+          if (blChargeUrl) {
+            return { url: blChargeUrl };
+          } else {
+            this.logger.warn(
+              {
+                provider: paymentProvider,
+                payload: {
+                  msisdn,
+                  amount,
+                  subscriptionId,
+                },
+              },
+              'No URL returned from payment service',
+            );
+          }
+
+          break;
         }
 
         default:
@@ -89,7 +144,15 @@ export class PaymentService {
           throw new Error(`Unsupported payment provider: ${paymentProvider}`);
       }
     } catch (error) {
-      this.logger.error(error, `Failed to get charging url`);
+      this.logger.error(
+        {
+          msisdn,
+          paymentProvider,
+          subscriptionId,
+          error,
+        },
+        'Failed to get charging URL',
+      );
       throw error;
     }
   }

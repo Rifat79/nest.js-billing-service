@@ -61,6 +61,9 @@ export class SubscriptionsService {
         currency: product.product_plans[0].plan_pricing[0].currency,
         productName: product.name,
         durationCountDays: product.product_plans[0].billing_cycle_days,
+        paymentChannelId: paymentChannel.id,
+        productId: product.id,
+        planId: product.product_plans[0].id,
       };
 
       const url = await this.paymentService.getChargingUrl(getChargeUrlPayload);
