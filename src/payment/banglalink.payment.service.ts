@@ -1,6 +1,6 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { HttpClientService } from 'src/common/http-client/http-client.service';
 
 export interface BanglalinkPaymentConfig {
   activation: string;
@@ -26,7 +26,7 @@ export class BanglalinkPaymentService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly httpService: HttpService,
+    private readonly httpClient: HttpClientService,
   ) {
     this.config = {
       activation: this.configService.get('BL_SDP_ACTIVATE') ?? '',
@@ -42,8 +42,8 @@ export class BanglalinkPaymentService {
 
     try {
       const queryObject = {
-        planId: chargeConfig?.plan_id,
-        chargecode: chargeConfig?.charge_code,
+        planId: chargeConfig?.planId,
+        chargecode: chargeConfig?.chargeCode,
         featureId: 'ACTIVATION',
         amount,
         requestId,
@@ -51,10 +51,9 @@ export class BanglalinkPaymentService {
       };
       url += this.prepareQueryString(queryObject);
 
-      const response = await firstValueFrom(
-        this.httpService.get(url, { timeout: this.config.timeout }),
-      );
-
+      const response = await this.httpClient.get(url, {
+        timeout: this.config.timeout,
+      });
       return response.data;
     } catch (e) {
       console.log(
@@ -63,5 +62,15 @@ export class BanglalinkPaymentService {
       );
       throw e;
     }
+  }
+
+  private prepareQueryString(params: Record<string, any>): string {
+    return Object.entries(params)
+      .filter(([_, value]) => value !== undefined && value !== null)
+      .map(
+        ([key, value]) =>
+          encodeURIComponent(key) + '=' + encodeURIComponent(String(value)),
+      )
+      .join('&');
   }
 }
