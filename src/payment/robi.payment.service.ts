@@ -1,0 +1,132 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PinoLogger } from 'nestjs-pino';
+import { HttpClientService } from 'src/common/http-client/http-client.service';
+
+export interface RobiChargeConfig {
+  apiKey: string;
+  username: string;
+  onBehalfOf: string;
+  subscriptionName: string;
+  description: string;
+  purchaseCategoryCode: string;
+  channel: string;
+  subscriptionID: string;
+  unSubURL: string;
+  contactInfo: string;
+  subscriptionDuration: number;
+}
+
+export interface RobiChargeRequestPayload {
+  currency: string;
+  amount: number;
+  referenceCode: string;
+  msisdn: string;
+  config: RobiChargeConfig;
+}
+
+export interface RobiPaymentServiceConfig {
+  baseUrl: string;
+  timeout: number;
+  callbackUrl: string;
+  aocPageUrl: string;
+}
+
+interface AocTokenResponse {
+  aocToken?: string;
+  aocTransID?: string;
+  [key: string]: unknown;
+}
+
+@Injectable()
+export class RobiPaymentService {
+  private readonly config: RobiPaymentServiceConfig;
+
+  constructor(
+    private readonly logger: PinoLogger,
+    private readonly configService: ConfigService,
+    private readonly httpClient: HttpClientService,
+  ) {
+    this.config = {
+      baseUrl: this.configService.get<string>('ROBI_BASE_URL') ?? '',
+      timeout: this.configService.get<number>('ROBI_TIMEOUT') ?? 5000,
+      callbackUrl: this.configService.get<string>('ROBI_CALLBACK_URL') ?? '',
+      aocPageUrl: this.configService.get<string>('ROBI_AOC_PAGE_URL') ?? '',
+    };
+    this.logger.setContext(RobiPaymentService.name);
+  }
+
+  async getAocToken(
+    data: RobiChargeRequestPayload,
+  ): Promise<{ url: string; aocTransID: string }> {
+    const { amount, currency, referenceCode, msisdn, config } = data;
+    const url = `${this.config.baseUrl}/getAOCToken`;
+
+    const payload = {
+      apiKey: config.apiKey,
+      username: config.username,
+      spTransID: referenceCode,
+      description: config.description,
+      currency,
+      amount,
+      onBehalfOf: config.onBehalfOf,
+      purchaseCategoryCode: config.purchaseCategoryCode,
+      referenceCode,
+      channel: config.channel,
+      operator: 'ROBI',
+      taxAmount: 0,
+      callbackURL: `${this.config.callbackUrl}/${referenceCode}`,
+      contactInfo: config.contactInfo,
+      isSubscription: true,
+      subscriptionID: config.subscriptionID,
+      subscriptionName: config.subscriptionName,
+      subscriptionDuration: config.subscriptionDuration,
+      unSubURL: config.unSubURL,
+    };
+
+    try {
+      this.logger.info(
+        { msisdn, referenceCode, url, payload },
+        'Initiating Robi AOC token request',
+      );
+
+      const response = await this.httpClient.post<AocTokenResponse>(
+        url,
+        payload,
+        {
+          timeout: this.config.timeout,
+        },
+      );
+
+      const { aocToken, aocTransID } = response.data ?? {};
+
+      if (!aocToken || !aocTransID) {
+        this.logger.warn(
+          { msisdn, referenceCode, response: response.data },
+          'Robi AOC token generation failed: missing token',
+        );
+        throw new Error('Could not generate AOC Token');
+      }
+
+      const consentUrl = `${this.config.aocPageUrl}/aoc?aocToken=${encodeURIComponent(aocToken)}`;
+
+      this.logger.info(
+        { msisdn, referenceCode, consentUrl },
+        'Robi AOC token generated successfully',
+      );
+
+      return { url: consentUrl, aocTransID };
+    } catch (error) {
+      this.logger.error(
+        {
+          error,
+          msisdn,
+          referenceCode,
+          url,
+        },
+        'Robi AOC token request failed',
+      );
+      throw error;
+    }
+  }
+}

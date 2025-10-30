@@ -1,4 +1,11 @@
 {
   // "window.zoomLevel": 0.75,
-  "cSpell.words": ["Banglalink", "msisdn", "RABBITMQ", "retryable", "uuidv"]
+  "cSpell.words": [
+    "Banglalink",
+    "msisdn",
+    "RABBITMQ",
+    "retryable",
+    "ROBI",
+    "uuidv"
+  ]
 }

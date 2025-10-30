@@ -9,6 +9,7 @@ import {
   BanglalinkPaymentService,
 } from './banglalink.payment.service';
 import { GpPaymentService } from './gp.payment.service';
+import { RobiChargeConfig, RobiPaymentService } from './robi.payment.service';
 
 interface ChargingUrlParams {
   msisdn: string;
@@ -34,6 +35,7 @@ export class PaymentService {
     private readonly blPaymentService: BanglalinkPaymentService,
     private readonly paymentChannelRepo: PaymentChannelRepository,
     private readonly chargeConfigRepo: ChargeConfigRepository,
+    private readonly robiPaymentService: RobiPaymentService,
   ) {
     this.logger.setContext(PaymentService.name);
   }
@@ -139,6 +141,23 @@ export class PaymentService {
             );
             throw new Error('No URL returned from Banglalink payment service');
           }
+
+          return { url };
+        }
+
+        case 'ROBI': {
+          const robiChargeConfig =
+            chargeConfig.config as unknown as RobiChargeConfig;
+
+          const { url, aocTransID } = await this.robiPaymentService.getAocToken(
+            {
+              amount,
+              currency,
+              referenceCode: subscriptionId,
+              msisdn,
+              config: robiChargeConfig,
+            },
+          );
 
           return { url };
         }
