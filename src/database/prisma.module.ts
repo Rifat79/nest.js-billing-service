@@ -1,5 +1,6 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ChargeConfigRepository } from './charge-config.repository';
 import { PaymentChannelRepository } from './payment-channel.repository';
 import { PlanPricingRepository } from './plan-pricing.repository';
 import { PlanRepository } from './plan.repository';
@@ -35,6 +36,7 @@ export class PrismaModule {
         PaymentChannelRepository,
         PlanRepository,
         PlanPricingRepository,
+        ChargeConfigRepository,
       ],
       exports: [
         PrismaService,
@@ -47,6 +49,7 @@ export class PrismaModule {
         PaymentChannelRepository,
         PlanRepository,
         PlanPricingRepository,
+        ChargeConfigRepository,
       ],
     };
   }
@@ -64,6 +67,7 @@ export class PrismaModule {
         PaymentChannelRepository,
         PlanRepository,
         PlanPricingRepository,
+        ChargeConfigRepository,
       ],
       exports: [
         PrismaService,
@@ -75,6 +79,7 @@ export class PrismaModule {
         PaymentChannelRepository,
         PlanRepository,
         PlanPricingRepository,
+        ChargeConfigRepository,
       ],
     };
   }

@@ -76,11 +76,13 @@ export class GpPaymentService {
           initialPaymentAmount !== amount ? durationCountDays : null,
       };
 
-      const response: {
-        url: string;
-      } = await this.httpClient.post(url, payload, this.getAuthHeaders());
+      const response = await this.httpClient.post(
+        url,
+        payload,
+        this.getAuthHeaders(),
+      );
 
-      return response.url;
+      return response.data.url;
     } catch (error) {
       this.logger.error(error, 'Catch block error in prepareConsent');
       throw error;

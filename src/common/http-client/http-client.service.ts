@@ -1,10 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
-import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { AxiosError, AxiosRequestConfig } from 'axios';
 import { PinoLogger } from 'nestjs-pino';
-import { firstValueFrom, Observable, timer } from 'rxjs'; // Added 'timer'
-import { catchError, map, retry } from 'rxjs/operators'; // Removed 'delay' operator
+import { firstValueFrom, Observable, of, timer } from 'rxjs';
+import { catchError, map, retry } from 'rxjs/operators';
 
 // ------------------------------------------
 // Custom Exception for External API Failures
@@ -13,11 +12,17 @@ import { catchError, map, retry } from 'rxjs/operators'; // Removed 'delay' oper
  * Thrown when an external API call fails, standardizing the response status
  * for upstream services (e.g., usually 502 Bad Gateway).
  */
-class ExternalApiFailureException extends RpcException {
-  constructor(message: string, status = 502) {
-    super({ status, message });
-    this.name = 'ExternalApiFailureException';
-  }
+
+export interface HttpCallError {
+  code?: string;
+  message?: string;
+}
+export interface HttpCallResult<T> {
+  status: number;
+  data: T | null;
+  headers: any;
+  error?: HttpCallError;
+  duration: number;
 }
 
 @Injectable()
@@ -39,13 +44,12 @@ export class HttpClientService {
     url: string,
     config: AxiosRequestConfig = {},
     data?: any,
-    traceId?: string, // Added for microservice tracing and logging correlation
-  ): Promise<T> {
+    traceId?: string,
+  ): Promise<HttpCallResult<T>> {
     const startTime = Date.now();
-    // Use 'N/A' as a fallback for the trace ID to ensure the logging field exists
     const logContext = { url, method, traceId: traceId || 'N/A' };
 
-    const requestObservable: Observable<AxiosResponse<T>> = this.httpService
+    const requestObservable: Observable<HttpCallResult<T>> = this.httpService
       .request({
         method,
         url,
@@ -53,66 +57,65 @@ export class HttpClientService {
         ...config,
       })
       .pipe(
-        // 1. Retry Mechanism with Exponential Backoff
         retry({
-          count: 0, // Total 3 retries (4 attempts total)
+          count: 0,
           delay: (error, retryCount) => {
-            // Calculate exponential wait time: 2^n * 1000ms (1s, 2s, 4s)
             const waitTime = Math.pow(2, retryCount) * 1000;
-
-            // Log the retry attempt with the error details
             this.logger.warn(
               { ...logContext, error: error.message, retryCount },
               `Request failed (${error.message}). Retrying in ${waitTime}ms...`,
             );
-            return timer(waitTime); // FIX: Use timer() to return ObservableInput<any>
+            return timer(waitTime);
           },
         }),
-
-        // 2. Logging and Final Error Handling (after all retries fail)
+        map((axiosResponse) => {
+          // Map AxiosResponse to your HttpCallResult<T>
+          return {
+            status: axiosResponse.status,
+            data: axiosResponse.data,
+            headers: axiosResponse.headers,
+            duration: Date.now() - startTime, // you might want to calculate this here or after subscription
+          } as HttpCallResult<T>;
+        }),
         catchError((err: AxiosError) => {
-          // Renamed 'error' to 'err' to prevent shadowing issues
           const duration = Date.now() - startTime;
+          const statusCode = err.response?.status ?? HttpStatus.GATEWAY_TIMEOUT;
 
-          // Determine the status code for standardized error reporting
-          const responseStatus = err.response?.status;
-          const statusCode = responseStatus
-            ? responseStatus
-            : HttpStatus.BAD_GATEWAY; // Default to 502 for network failures/timeouts
-
-          // Log the final failure
           this.logger.error(
             {
               ...logContext,
-              status: statusCode,
               duration,
-              code: err.code, // Axios error code (e.g., ECONNABORTED, ENOTFOUND)
+              status: statusCode,
+              code: err.code,
               message: err.message,
             },
             `External API call failed permanently after ${duration}ms.`,
           );
 
-          // Throw a standardized exception
-          throw new ExternalApiFailureException(
-            `[${method.toUpperCase()} ${url}] failed with status: ${statusCode}`,
-            statusCode,
-          );
+          return of<HttpCallResult<T>>({
+            status: statusCode,
+            duration,
+            data: (err.response?.data ?? null) as T | null,
+            headers: err.response?.headers ?? {},
+            error: {
+              code: err.code,
+              message: err.message,
+            },
+          });
         }),
-
-        // 3. Extract data only if request was successful (2xx)
-        map((response) => response.data),
       );
 
-    // Convert the Observable into a Promise for async/await use
-    const result = await firstValueFrom(requestObservable);
+    const response = await firstValueFrom(requestObservable);
 
-    const duration = Date.now() - startTime;
-    this.logger.info(
-      { ...logContext, duration, status: 200 },
-      `External API call successful in ${duration}ms.`,
-    );
+    // Only log success if no error is present
+    if (!('error' in response)) {
+      this.logger.info(
+        { ...logContext, duration: response.duration, status: response.status },
+        `External API call successful in ${response.duration}ms.`,
+      );
+    }
 
-    return result as T;
+    return response;
   }
 
   // ------------------------------------------
@@ -124,7 +127,7 @@ export class HttpClientService {
     url: string,
     config?: AxiosRequestConfig,
     traceId?: string,
-  ): Promise<T> {
+  ): Promise<HttpCallResult<T>> {
     return this.execute('get', url, config, undefined, traceId);
   }
 
@@ -134,7 +137,7 @@ export class HttpClientService {
     data: any,
     config?: AxiosRequestConfig,
     traceId?: string,
-  ): Promise<T> {
+  ): Promise<HttpCallResult<T>> {
     return this.execute('post', url, config, data, traceId);
   }
 
@@ -144,7 +147,7 @@ export class HttpClientService {
     data: any,
     config?: AxiosRequestConfig,
     traceId?: string,
-  ): Promise<T> {
+  ): Promise<HttpCallResult<T>> {
     return this.execute('put', url, config, data, traceId);
   }
 
@@ -153,7 +156,7 @@ export class HttpClientService {
     url: string,
     config?: AxiosRequestConfig,
     traceId?: string,
-  ): Promise<T> {
+  ): Promise<HttpCallResult<T>> {
     return this.execute('delete', url, config, undefined, traceId);
   }
 
@@ -163,7 +166,7 @@ export class HttpClientService {
     data: any,
     config?: AxiosRequestConfig,
     traceId?: string,
-  ): Promise<T> {
+  ): Promise<HttpCallResult<T>> {
     return this.execute('patch', url, config, data, traceId);
   }
 }
