@@ -5,6 +5,7 @@ import { BkashPaymentService } from './bkash.payment.service';
 import { GpPaymentService } from './gp.payment.service';
 import { PaymentService } from './payment.service';
 import { RobiPaymentService } from './robi.payment.service';
+import { SSLPaymentService } from './ssl.payment.service';
 
 @Module({
   imports: [HttpClientModule],
@@ -14,6 +15,7 @@ import { RobiPaymentService } from './robi.payment.service';
     BanglalinkPaymentService,
     RobiPaymentService,
     BkashPaymentService,
+    SSLPaymentService,
   ],
   exports: [PaymentService],
 })

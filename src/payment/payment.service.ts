@@ -14,6 +14,7 @@ import {
 } from './bkash.payment.service';
 import { GpPaymentService } from './gp.payment.service';
 import { RobiChargeConfig, RobiPaymentService } from './robi.payment.service';
+import { SSLPaymentService } from './ssl.payment.service';
 
 interface ChargingUrlParams {
   msisdn: string;
@@ -41,6 +42,7 @@ export class PaymentService {
     private readonly chargeConfigRepo: ChargeConfigRepository,
     private readonly robiPaymentService: RobiPaymentService,
     private readonly bkashPaymentService: BkashPaymentService,
+    private readonly sslPaymentService: SSLPaymentService,
   ) {
     this.logger.setContext(PaymentService.name);
   }
@@ -193,6 +195,24 @@ export class PaymentService {
               'No URL returned from Bkash payment service',
             );
             throw new Error('No URL returned from Bkash payment service');
+          }
+
+          return { url };
+        }
+
+        case 'SSL': {
+          const { url, sessionKey } = await this.sslPaymentService.initPayment({
+            msisdn,
+            amount,
+            subscriptionId,
+          });
+
+          if (!url) {
+            this.logger.warn(
+              { provider: paymentProvider, msisdn, subscriptionId },
+              'No URL returned from SSL payment service',
+            );
+            throw new Error('No URL returned from SSL payment service');
           }
 
           return { url };
