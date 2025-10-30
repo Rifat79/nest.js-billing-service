@@ -8,6 +8,10 @@ import {
   BanglalinkChargeConfig,
   BanglalinkPaymentService,
 } from './banglalink.payment.service';
+import {
+  BkashChargeConfig,
+  BkashPaymentService,
+} from './bkash.payment.service';
 import { GpPaymentService } from './gp.payment.service';
 import { RobiChargeConfig, RobiPaymentService } from './robi.payment.service';
 
@@ -36,6 +40,7 @@ export class PaymentService {
     private readonly paymentChannelRepo: PaymentChannelRepository,
     private readonly chargeConfigRepo: ChargeConfigRepository,
     private readonly robiPaymentService: RobiPaymentService,
+    private readonly bkashPaymentService: BkashPaymentService,
   ) {
     this.logger.setContext(PaymentService.name);
   }
@@ -158,6 +163,37 @@ export class PaymentService {
               config: robiChargeConfig,
             },
           );
+
+          if (!url) {
+            this.logger.warn(
+              { provider: paymentProvider, msisdn, subscriptionId },
+              'No URL returned from Robi payment service',
+            );
+            throw new Error('No URL returned from Robi payment service');
+          }
+
+          return { url };
+        }
+
+        case 'BKASH': {
+          const bkashChargeConfig =
+            chargeConfig.config as unknown as BkashChargeConfig;
+
+          const url = await this.bkashPaymentService.createSubscription({
+            amount,
+            initialPaymentAmount: amount,
+            validityInDays: durationCountDays,
+            subscriptionRequestId: subscriptionId,
+            config: bkashChargeConfig,
+          });
+
+          if (!url) {
+            this.logger.warn(
+              { provider: paymentProvider, msisdn, subscriptionId },
+              'No URL returned from Bkash payment service',
+            );
+            throw new Error('No URL returned from Bkash payment service');
+          }
 
           return { url };
         }
