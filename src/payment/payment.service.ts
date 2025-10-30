@@ -13,6 +13,7 @@ import {
   BkashPaymentService,
 } from './bkash.payment.service';
 import { GpPaymentService } from './gp.payment.service';
+import { NagadPaymentService } from './nagad.payment.service';
 import { RobiChargeConfig, RobiPaymentService } from './robi.payment.service';
 import { SSLPaymentService } from './ssl.payment.service';
 
@@ -43,6 +44,7 @@ export class PaymentService {
     private readonly robiPaymentService: RobiPaymentService,
     private readonly bkashPaymentService: BkashPaymentService,
     private readonly sslPaymentService: SSLPaymentService,
+    private readonly nagadPaymentService: NagadPaymentService,
   ) {
     this.logger.setContext(PaymentService.name);
   }
@@ -216,6 +218,9 @@ export class PaymentService {
           }
 
           return { url };
+        }
+
+        case 'NAGAD': {
         }
 
         default:
