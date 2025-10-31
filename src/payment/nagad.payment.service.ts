@@ -16,6 +16,11 @@ interface CreatePaymentPayload {
   subscriptionId: string;
 }
 
+interface CreatePaymentResponse {
+  url: string;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class NagadPaymentService {
   private readonly config: NagadPaymentServiceConfig;
@@ -36,7 +41,7 @@ export class NagadPaymentService {
     this.logger.setContext(NagadPaymentService.name);
   }
 
-  async cretePayment(data: CreatePaymentPayload) {
+  async createPayment(data: CreatePaymentPayload): Promise<string> {
     const { msisdn, amount, subscriptionId } = data;
 
     try {
@@ -52,9 +57,36 @@ export class NagadPaymentService {
 
       if (customerNagadDetails) {
         nagadPurpose = 'ECOM_TOKEN_TXN';
-        nagadCustomerId = customerNagadDetails.nagad_customer_id;
-        nagadToken = customerNagadDetails.nagad_token;
+        nagadCustomerId = customerNagadDetails.nagad_customer_id ?? '';
+        nagadToken = customerNagadDetails.nagad_token ?? '';
       }
-    } catch (error) {}
+
+      const url = this.config.createPaymentApi;
+      const payload = {
+        amount,
+        orderId: subscriptionId,
+        productDetails,
+        purpose: nagadPurpose,
+        customerId: nagadCustomerId,
+        paymentToken: nagadToken,
+      };
+
+      this.logger.info(payload, 'Sending Nagad payment request');
+
+      const response = await this.httpClient.post<CreatePaymentResponse>(
+        url,
+        payload,
+      );
+
+      if (!response.data?.url) {
+        this.logger.warn(payload, 'Nagad getting url failed: did not get url');
+        throw new Error('Nagad create payment failed');
+      }
+
+      return response.data?.url;
+    } catch (error) {
+      this.logger.error(data, 'Nagad create payment catch block error');
+      throw error;
+    }
   }
 }

@@ -221,6 +221,21 @@ export class PaymentService {
         }
 
         case 'NAGAD': {
+          const url = await this.nagadPaymentService.createPayment({
+            msisdn,
+            amount,
+            subscriptionId,
+          });
+
+          if (!url) {
+            this.logger.warn(
+              { provider: paymentProvider, msisdn, subscriptionId },
+              'No URL returned from Nagad payment service',
+            );
+            throw new Error('No URL returned from Nagad payment service');
+          }
+
+          return { url };
         }
 
         default:
