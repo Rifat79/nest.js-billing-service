@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { payment_channels } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
+import {
+  ChargeConfigNotFoundException,
+  NoUrlReturnedException,
+  UnsupportedProviderException,
+} from 'src/common/exceptions';
 import { RedisService } from 'src/common/redis/redis.service';
 import { ChargeConfigRepository } from 'src/database/charge-config.repository';
 import { PaymentChannelRepository } from 'src/database/payment-channel.repository';
@@ -129,8 +134,10 @@ export class PaymentService {
         { paymentChannelId, productId, planId },
         'Charge config not found',
       );
-      throw new Error(
-        `Charge config not found for channel=${paymentChannelId}, product=${productId}, plan=${planId}`,
+      throw new ChargeConfigNotFoundException(
+        paymentChannelId,
+        productId,
+        planId,
       );
     }
 
@@ -214,7 +221,7 @@ export class PaymentService {
 
       if (!handler) {
         this.logger.warn({ provider }, 'Unsupported payment provider');
-        throw new Error(`Unsupported payment provider: ${provider}`);
+        throw new UnsupportedProviderException(provider);
       }
 
       const result = await handler();
@@ -224,7 +231,7 @@ export class PaymentService {
           { provider, msisdn, subscriptionId },
           'No URL returned from payment service',
         );
-        throw new Error(`No URL returned from ${provider} payment service`);
+        throw new NoUrlReturnedException(provider, msisdn, subscriptionId);
       }
 
       return result;
