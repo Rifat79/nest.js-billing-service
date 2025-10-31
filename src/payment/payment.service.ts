@@ -12,7 +12,7 @@ import {
   BkashChargeConfig,
   BkashPaymentService,
 } from './bkash.payment.service';
-import { GpPaymentService } from './gp.payment.service';
+import { GpChargeConfig, GpPaymentService } from './gp.payment.service';
 import { NagadPaymentService } from './nagad.payment.service';
 import { RobiChargeConfig, RobiPaymentService } from './robi.payment.service';
 import { SSLPaymentService } from './ssl.payment.service';
@@ -21,7 +21,6 @@ interface ChargingUrlParams {
   msisdn: string;
   amount: number;
   currency: string;
-  productName: string;
   paymentProvider: string;
   subscriptionId: string;
   productDescription: string;
@@ -109,7 +108,6 @@ export class PaymentService {
       currency,
       paymentProvider,
       subscriptionId,
-      productName,
       initialPaymentAmount,
       durationCountDays,
       productDescription,
@@ -137,15 +135,18 @@ export class PaymentService {
     try {
       switch (paymentProvider.toUpperCase()) {
         case 'GP': {
+          const gpChargeConfig =
+            chargeConfig.config as unknown as GpChargeConfig;
+
           const url = await this.gpPaymentService.prepareConsent({
             msisdn,
             amount,
             currency,
             subscriptionId,
             productDescription,
-            merchant: productName,
             initialPaymentAmount,
             durationCountDays,
+            config: gpChargeConfig,
           });
 
           if (!url) {

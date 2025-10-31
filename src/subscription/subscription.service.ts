@@ -59,7 +59,6 @@ export class SubscriptionsService {
           amount,
         ),
         currency: product.product_plans[0].plan_pricing[0].currency,
-        productName: product.name,
         durationCountDays: product.product_plans[0].billing_cycle_days,
         paymentChannelId: paymentChannel.id,
         productId: product.id,

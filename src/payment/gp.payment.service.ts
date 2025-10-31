@@ -20,10 +20,9 @@ type PrepareConsentData = {
   productDescription: string;
   durationCountDays: number;
   subscriptionId: string;
-  merchant: string;
+  config: GpChargeConfig;
 };
-// TODO: implement it
-interface GpChargeConfig {
+export interface GpChargeConfig {
   keyword: string;
   category?: string;
 }
@@ -57,7 +56,7 @@ export class GpPaymentService {
         productDescription,
         durationCountDays,
         subscriptionId,
-        merchant,
+        config,
       } = data;
 
       const API_GATEWAY_BASE_URL =
@@ -75,7 +74,7 @@ export class GpPaymentService {
           error: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=fail`,
         },
         msisdn,
-        merchant,
+        merchant: config.keyword,
         operatorId: 'GRA-BD',
         freeTrialPeriod:
           initialPaymentAmount !== amount ? durationCountDays : null,
