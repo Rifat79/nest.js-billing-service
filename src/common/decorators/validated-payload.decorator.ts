@@ -20,16 +20,37 @@ export const ValidatedPayload = (validationPipe?: ValidationPipe) =>
         },
 
         exceptionFactory: (errors) => {
-          console.log('Validation Errors:', JSON.stringify(errors, null, 2));
+          const flattenErrors = (errors: any[], parentPath = ''): any[] =>
+            errors.flatMap((err) => {
+              const propertyPath = parentPath
+                ? `${parentPath}.${err.property}`
+                : err.property;
+              const messages = err.constraints
+                ? Object.values(err.constraints)
+                : [];
+              const children = err.children?.length
+                ? flattenErrors(err.children, propertyPath)
+                : [];
+
+              return [
+                ...(messages.length
+                  ? [
+                      {
+                        property: propertyPath,
+                        value: err.value,
+                        messages,
+                      },
+                    ]
+                  : []),
+                ...children,
+              ];
+            });
+
           return new RpcException({
             status: 400,
-            message: 'Validation failed',
-            error: 'BAD_REQUEST',
-            details: errors.map((err) => ({
-              property: err.property,
-              constraints: err.constraints,
-              value: err.value,
-            })),
+            code: 'VALIDATION_ERROR',
+            message: 'Payload validation failed',
+            details: flattenErrors(errors),
           });
         },
       }),
