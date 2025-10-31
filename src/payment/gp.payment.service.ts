@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
 import { HttpClientService } from 'src/common/http-client/http-client.service';
 
-interface GpPaymentConfig {
+interface GpPaymentServiceConfig {
   baseUrl: string;
   auth: {
     username: string;
@@ -22,10 +22,15 @@ type PrepareConsentData = {
   subscriptionId: string;
   merchant: string;
 };
+// TODO: implement it
+interface GpChargeConfig {
+  keyword: string;
+  category?: string;
+}
 
 @Injectable()
 export class GpPaymentService {
-  private readonly config: GpPaymentConfig;
+  private readonly config: GpPaymentServiceConfig;
 
   constructor(
     private readonly configService: ConfigService,

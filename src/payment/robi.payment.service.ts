@@ -11,7 +11,6 @@ export interface RobiChargeConfig {
   description: string;
   purchaseCategoryCode: string;
   channel: string;
-  subscriptionID: string;
   unSubURL: string;
   contactInfo: string;
   subscriptionDuration: number;
@@ -33,9 +32,13 @@ export interface RobiPaymentServiceConfig {
 }
 
 interface AocTokenResponse {
-  aocToken?: string;
-  aocTransID?: string;
-  [key: string]: unknown;
+  data: {
+    aocToken?: string;
+    aocTransID?: string;
+    errorCode?: string;
+    errorMessage?: string;
+    [key: string]: unknown;
+  };
 }
 
 @Injectable()
@@ -78,7 +81,7 @@ export class RobiPaymentService {
       callbackURL: `${this.config.callbackUrl}/${referenceCode}`,
       contactInfo: config.contactInfo,
       isSubscription: true,
-      subscriptionID: config.subscriptionID,
+      subscriptionID: config.subscriptionName,
       subscriptionName: config.subscriptionName,
       subscriptionDuration: config.subscriptionDuration,
       unSubURL: config.unSubURL,
@@ -98,7 +101,8 @@ export class RobiPaymentService {
         },
       );
 
-      const { aocToken, aocTransID } = response.data ?? {};
+      const responseData = response.data?.data ?? {};
+      const { aocToken, aocTransID } = responseData;
 
       if (!aocToken || !aocTransID) {
         this.logger.warn(

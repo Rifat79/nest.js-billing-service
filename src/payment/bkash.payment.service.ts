@@ -86,9 +86,9 @@ export class BkashPaymentService {
       if (!redirectURL) {
         this.logger.warn(
           { subscriptionRequestId, response },
-          'Robi AOC token generation failed: missing token',
+          'Bkash create subscription failed: missing redirectURL',
         );
-        throw new Error('Could not generate AOC Token');
+        throw new Error('Could not get redirect url');
       }
 
       return redirectURL;

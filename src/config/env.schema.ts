@@ -45,6 +45,14 @@ export const envSchema = z.object({
   GP_BASIC_AUTH_USER: z.string().min(1, 'User is required'),
   GP_BASIC_AUTH_PASS: z.string().min(1, 'Password is required'),
 
+  // BL
+  BL_SDP_ACTIVATE: z.string().url(),
+  BL_CONSENT_URL: z.string().url(),
+
+  // Robi
+  ROBI_BASE_URL: z.string().url(),
+  ROBI_AOC_PAGE_URL: z.string().url(),
+
   // log
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])

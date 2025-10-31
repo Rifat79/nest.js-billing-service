@@ -73,6 +73,35 @@ export class PaymentService {
     }
   }
 
+  private async getChargeConfig(
+    paymentChannelId: number,
+    productId: number,
+    planId: number,
+  ): Promise<any> {
+    const cacheKey = `charge_config:${paymentChannelId}:${productId}:${planId}`;
+    const cached = await this.redis.get(cacheKey);
+
+    if (cached) {
+      this.logger.debug({ cacheKey }, 'Charge config cache hit');
+      return cached;
+    }
+
+    const config = await this.chargeConfigRepo.findUnique({
+      payment_channel_id_product_id_plan_id: {
+        payment_channel_id: paymentChannelId,
+        product_id: productId,
+        plan_id: planId,
+      },
+    });
+
+    if (config) {
+      await this.redis.set(cacheKey, config);
+      this.logger.debug({ cacheKey }, 'Charge config cached');
+    }
+
+    return config;
+  }
+
   async getChargingUrl(params: ChargingUrlParams): Promise<{ url: string }> {
     const {
       msisdn,
@@ -89,13 +118,11 @@ export class PaymentService {
       planId,
     } = params;
 
-    const chargeConfig = await this.chargeConfigRepo.findUnique({
-      payment_channel_id_product_id_plan_id: {
-        payment_channel_id: paymentChannelId,
-        plan_id: planId,
-        product_id: productId,
-      },
-    });
+    const chargeConfig = await this.getChargeConfig(
+      paymentChannelId,
+      productId,
+      planId,
+    );
 
     if (!chargeConfig) {
       this.logger.warn(

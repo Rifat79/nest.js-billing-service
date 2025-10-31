@@ -31,7 +31,7 @@ interface ErrObject extends Error {
 
 export const createLoggerConfig = (configService: ConfigService) => ({
   pinoHttp: {
-    level: configService.get<string>('logger.logLevel', 'info'),
+    level: configService.get<string>('LOG_LEVEL', 'info'),
     transport:
       configService.get<string>('app.nodeEnv') !== 'production'
         ? {
