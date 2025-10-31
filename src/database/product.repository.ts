@@ -67,6 +67,14 @@ export class ProductRepository extends BaseRepository<
       },
       include: {
         product_plans: {
+          where: {
+            plan_pricing: {
+              some: {
+                payment_channel_id: paymentChannelId,
+                base_amount: pricingAmount,
+              },
+            },
+          },
           include: {
             plan_pricing: {
               where: {
