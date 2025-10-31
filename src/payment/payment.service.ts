@@ -101,7 +101,9 @@ export class PaymentService {
     return config;
   }
 
-  async getChargingUrl(params: ChargingUrlParams): Promise<{ url: string }> {
+  async getChargingUrl(
+    params: ChargingUrlParams,
+  ): Promise<{ url: string; aocTransID?: string; sessionKey?: string }> {
     const {
       msisdn,
       amount,
@@ -132,155 +134,103 @@ export class PaymentService {
       );
     }
 
+    const provider = paymentProvider.toUpperCase();
+
+    const providerHandlers: Record<
+      string,
+      () => Promise<{ url: string; aocTransID?: string; sessionKey?: string }>
+    > = {
+      GP: async () => {
+        const gpChargeConfig = chargeConfig.config as GpChargeConfig;
+        const url = await this.gpPaymentService.prepareConsent({
+          msisdn,
+          amount,
+          currency,
+          subscriptionId,
+          productDescription,
+          initialPaymentAmount,
+          durationCountDays,
+          config: gpChargeConfig,
+        });
+        return { url };
+      },
+
+      BL: async () => {
+        const blChargeConfig = chargeConfig.config as BanglalinkChargeConfig;
+        const url = await this.blPaymentService.initActivation({
+          msisdn,
+          amount,
+          requestId: subscriptionId,
+          chargeConfig: blChargeConfig,
+        });
+        return { url };
+      },
+
+      ROBI: async () => {
+        const robiChargeConfig = chargeConfig.config as RobiChargeConfig;
+        const { url, aocTransID } = await this.robiPaymentService.getAocToken({
+          amount,
+          currency,
+          referenceCode: subscriptionId,
+          msisdn,
+          config: robiChargeConfig,
+        });
+        return { url, aocTransID };
+      },
+
+      BKASH: async () => {
+        const bkashChargeConfig = chargeConfig.config as BkashChargeConfig;
+        const url = await this.bkashPaymentService.createSubscription({
+          amount,
+          initialPaymentAmount,
+          validityInDays: durationCountDays,
+          subscriptionRequestId: subscriptionId,
+          config: bkashChargeConfig,
+        });
+        return { url };
+      },
+
+      SSL: async () => {
+        const { url, sessionKey } = await this.sslPaymentService.initPayment({
+          msisdn,
+          amount,
+          subscriptionId,
+        });
+        return { url, sessionKey };
+      },
+
+      NAGAD: async () => {
+        const url = await this.nagadPaymentService.createPayment({
+          msisdn,
+          amount,
+          subscriptionId,
+        });
+        return { url };
+      },
+    };
+
     try {
-      switch (paymentProvider.toUpperCase()) {
-        case 'GP': {
-          const gpChargeConfig =
-            chargeConfig.config as unknown as GpChargeConfig;
+      const handler = providerHandlers[provider];
 
-          const url = await this.gpPaymentService.prepareConsent({
-            msisdn,
-            amount,
-            currency,
-            subscriptionId,
-            productDescription,
-            initialPaymentAmount,
-            durationCountDays,
-            config: gpChargeConfig,
-          });
-
-          if (!url) {
-            this.logger.warn(
-              { provider: paymentProvider, msisdn, subscriptionId },
-              'No URL returned from GP payment service',
-            );
-            throw new Error('No URL returned from GP payment service');
-          }
-
-          return { url };
-        }
-
-        case 'BL': {
-          const blChargeConfig =
-            chargeConfig.config as unknown as BanglalinkChargeConfig;
-
-          const url = await this.blPaymentService.initActivation({
-            msisdn,
-            amount,
-            requestId: subscriptionId,
-            chargeConfig: blChargeConfig,
-          });
-
-          if (!url) {
-            this.logger.warn(
-              { provider: paymentProvider, msisdn, subscriptionId },
-              'No URL returned from Banglalink payment service',
-            );
-            throw new Error('No URL returned from Banglalink payment service');
-          }
-
-          return { url };
-        }
-
-        case 'ROBI': {
-          const robiChargeConfig =
-            chargeConfig.config as unknown as RobiChargeConfig;
-
-          const { url, aocTransID } = await this.robiPaymentService.getAocToken(
-            {
-              amount,
-              currency,
-              referenceCode: subscriptionId,
-              msisdn,
-              config: robiChargeConfig,
-            },
-          );
-
-          if (!url) {
-            this.logger.warn(
-              { provider: paymentProvider, msisdn, subscriptionId },
-              'No URL returned from Robi payment service',
-            );
-            throw new Error('No URL returned from Robi payment service');
-          }
-
-          return { url };
-        }
-
-        case 'BKASH': {
-          const bkashChargeConfig =
-            chargeConfig.config as unknown as BkashChargeConfig;
-
-          const url = await this.bkashPaymentService.createSubscription({
-            amount,
-            initialPaymentAmount: amount,
-            validityInDays: durationCountDays,
-            subscriptionRequestId: subscriptionId,
-            config: bkashChargeConfig,
-          });
-
-          if (!url) {
-            this.logger.warn(
-              { provider: paymentProvider, msisdn, subscriptionId },
-              'No URL returned from Bkash payment service',
-            );
-            throw new Error('No URL returned from Bkash payment service');
-          }
-
-          return { url };
-        }
-
-        case 'SSL': {
-          const { url, sessionKey } = await this.sslPaymentService.initPayment({
-            msisdn,
-            amount,
-            subscriptionId,
-          });
-
-          if (!url) {
-            this.logger.warn(
-              { provider: paymentProvider, msisdn, subscriptionId },
-              'No URL returned from SSL payment service',
-            );
-            throw new Error('No URL returned from SSL payment service');
-          }
-
-          return { url };
-        }
-
-        case 'NAGAD': {
-          const url = await this.nagadPaymentService.createPayment({
-            msisdn,
-            amount,
-            subscriptionId,
-          });
-
-          if (!url) {
-            this.logger.warn(
-              { provider: paymentProvider, msisdn, subscriptionId },
-              'No URL returned from Nagad payment service',
-            );
-            throw new Error('No URL returned from Nagad payment service');
-          }
-
-          return { url };
-        }
-
-        default:
-          this.logger.warn(
-            { provider: paymentProvider },
-            'Unsupported payment provider',
-          );
-          throw new Error(`Unsupported payment provider: ${paymentProvider}`);
+      if (!handler) {
+        this.logger.warn({ provider }, 'Unsupported payment provider');
+        throw new Error(`Unsupported payment provider: ${provider}`);
       }
+
+      const result = await handler();
+
+      if (!result.url) {
+        this.logger.warn(
+          { provider, msisdn, subscriptionId },
+          'No URL returned from payment service',
+        );
+        throw new Error(`No URL returned from ${provider} payment service`);
+      }
+
+      return result;
     } catch (error) {
       this.logger.error(
-        {
-          provider: paymentProvider,
-          msisdn,
-          subscriptionId,
-          error,
-        },
+        { provider, msisdn, subscriptionId, error },
         'Failed to get charging URL',
       );
       throw error;
