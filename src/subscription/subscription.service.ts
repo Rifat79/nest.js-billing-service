@@ -17,7 +17,7 @@ export class SubscriptionsService {
 
   async createSubscription(
     data: CreateSubscriptionDto,
-  ): Promise<{ url: string }> {
+  ): Promise<{ url: string; subscriptionId: string }> {
     try {
       const { msisdn, transactionId, urls, paymentProvider, keyword, amount } =
         data.body;
@@ -65,7 +65,8 @@ export class SubscriptionsService {
         planId: product.product_plans[0].id,
       };
 
-      const url = await this.paymentService.getChargingUrl(getChargeUrlPayload);
+      const { url, aocTransID, sessionKey } =
+        await this.paymentService.getChargingUrl(getChargeUrlPayload);
 
       const subscriptionData = {
         subscription_id: subscriptionId,
@@ -77,13 +78,14 @@ export class SubscriptionsService {
         plan_pricing_id: product.product_plans[0].plan_pricing[0].id,
         merchant_transaction_id: transactionId,
         status: 'PENDING_CONSENT',
-        auto_renew: true,
+        auto_renew: product.product_plans[0].billing_model === 'RECURRING',
+        ...(aocTransID && { payment_channel_reference_id: aocTransID }),
         created_at: new Date(),
         updated_at: new Date(),
       };
       await this.redis.set(`subscriptions:${subscriptionId}`, subscriptionData);
 
-      return url;
+      return { url, subscriptionId };
     } catch (error) {
       this.logger.error(error, 'Catch block error in createSubscription');
       throw error;
