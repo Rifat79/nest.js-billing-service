@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import * as SSLCommerzPayment from 'sslcommerz-lts';
+import SSLCommerzPayment from 'sslcommerz-lts';
 
 export interface SSLPaymentServiceConfig {
   clientBaseUrl?: string;
