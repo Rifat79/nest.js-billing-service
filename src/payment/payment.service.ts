@@ -106,9 +106,12 @@ export class PaymentService {
     return config;
   }
 
-  async getChargingUrl(
-    params: ChargingUrlParams,
-  ): Promise<{ url: string; aocTransID?: string; sessionKey?: string }> {
+  async getChargingUrl(params: ChargingUrlParams): Promise<{
+    url: string;
+    aocTransID?: string;
+    sessionKey?: string;
+    chargeConfig: Record<string, any>;
+  }> {
     const {
       msisdn,
       amount,
@@ -234,7 +237,7 @@ export class PaymentService {
         throw new NoUrlReturnedException(provider, msisdn, subscriptionId);
       }
 
-      return result;
+      return { ...result, chargeConfig: chargeConfig.config };
     } catch (error) {
       this.logger.error(
         { provider, msisdn, subscriptionId, error },

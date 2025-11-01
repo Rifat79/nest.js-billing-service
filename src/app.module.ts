@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CallbackModule } from './callback/callback.module';
 import { RedisModule } from './common/redis/redis.module';
 import appConfig from './config/app.config';
 import dbConfig from './config/db.config';
@@ -35,6 +36,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     }),
 
     SubscriptionModule,
+
+    CallbackModule,
 
     ProductModule,
 

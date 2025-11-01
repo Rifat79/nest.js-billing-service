@@ -1,10 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { subscription_status } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { RedisService } from 'src/common/redis/redis.service';
 import { PaymentService } from 'src/payment/payment.service';
 import { ProductService } from 'src/product/product.service';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+
+export interface SubscriptionData {
+  subscription_id: string;
+  msisdn: string;
+  payment_channel_id: number;
+  merchant_id: number;
+  product_id: number;
+  plan_id: number;
+  plan_pricing_id: number;
+  merchant_transaction_id: string;
+  status: subscription_status;
+  auto_renew: boolean;
+  payment_channel_reference_id?: string;
+  created_at: Date;
+  updated_at: Date;
+
+  // Extra fields for processing later
+  urls: {
+    success: string;
+    deny: string;
+    error: string;
+  };
+  paymentProvider: string;
+  initialPaymentAmount: number;
+  chargeConfig: Record<string, any>;
+}
 
 @Injectable()
 export class SubscriptionsService {
@@ -65,7 +92,7 @@ export class SubscriptionsService {
         planId: product.product_plans[0].id,
       };
 
-      const { url, aocTransID, sessionKey } =
+      const { url, aocTransID, sessionKey, chargeConfig } =
         await this.paymentService.getChargingUrl(getChargeUrlPayload);
 
       const subscriptionData = {
@@ -82,6 +109,11 @@ export class SubscriptionsService {
         ...(aocTransID && { payment_channel_reference_id: aocTransID }),
         created_at: new Date(),
         updated_at: new Date(),
+        // INFO: Extra fields(added for processing later)
+        urls,
+        paymentProvider,
+        initialPaymentAmount: getChargeUrlPayload.initialPaymentAmount,
+        chargeConfig,
       };
       await this.redis.set(`subscriptions:${subscriptionId}`, subscriptionData);
 
@@ -90,6 +122,10 @@ export class SubscriptionsService {
       this.logger.error(error, 'Catch block error in createSubscription');
       throw error;
     }
+  }
+
+  async getCachedSubscription(subscriptionId: string) {
+    return this.redis.get<SubscriptionData>(`subscriptions:${subscriptionId}`);
   }
 
   // async cancelSubscription() {

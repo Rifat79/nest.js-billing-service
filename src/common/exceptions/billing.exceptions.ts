@@ -32,3 +32,14 @@ export class NoUrlReturnedException extends RpcError {
     );
   }
 }
+
+export class SubscriptionNotFoundException extends RpcError {
+  constructor(subscriptionId: string) {
+    super(
+      'SUBSCRIPTION_NOT_FOUND',
+      `No subscription was found with ${subscriptionId}`,
+      404,
+      { subscriptionId },
+    );
+  }
+}

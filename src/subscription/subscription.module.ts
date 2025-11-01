@@ -8,5 +8,6 @@ import { SubscriptionsService } from './subscription.service';
   imports: [ProductModule, PaymentModule],
   controllers: [SubscriptionsController],
   providers: [SubscriptionsService],
+  exports: [SubscriptionsService],
 })
 export class SubscriptionModule {}

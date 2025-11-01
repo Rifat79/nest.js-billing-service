@@ -13,7 +13,6 @@ export class AocRedirectionDto {
   query?: Record<string, any>;
 
   @IsObject()
-  @IsOptional()
   params?: Record<string, any>;
 
   @IsString()
@@ -21,10 +20,6 @@ export class AocRedirectionDto {
   requestId?: string;
 
   // ✅ Enriched Fields
-
-  @IsOptional()
-  @IsString()
-  planPricingId?: string;
 
   @IsOptional()
   @IsNumber()
