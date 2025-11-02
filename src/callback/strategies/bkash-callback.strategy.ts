@@ -10,7 +10,8 @@ import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
 import { CallbackResult } from '../interfaces/callback.interface';
 
 interface BkashCallbackQuery {
-  subscriptionId: string;
+  reference: string;
+  status: 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 }
 
 @Injectable()
@@ -34,11 +35,28 @@ export class BkashCallbackStrategy implements CallbackStrategy {
   }
 
   async handle(query: BkashCallbackQuery): Promise<CallbackResult> {
+    const { status, reference } = query;
     const {
       urls,
       subscription_id: subscriptionRequestId,
       chargeConfig,
     } = this.subscriptionData;
+
+    if (status === 'CANCELLED') {
+      return {
+        redirectUrl: urls.deny,
+        status: SubscriptionStatus.CONSENT_REJECTED,
+        remarks: reference,
+      };
+    }
+
+    if (status === 'FAILED') {
+      return {
+        redirectUrl: urls.error,
+        status: SubscriptionStatus.CONSENT_FAILED,
+        remarks: reference,
+      };
+    }
 
     const paymentStatus =
       await this.bkashPaymentService.queryPaymentStatusWithRequestId(

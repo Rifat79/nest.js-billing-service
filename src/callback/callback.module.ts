@@ -1,12 +1,30 @@
 import { Module } from '@nestjs/common';
+import { PaymentModule } from 'src/payment/payment.module';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
+import { CallbackStrategyFactory } from './callback-strategy.factory';
 import { CallbackController } from './callback.controller';
 import { CallbackService } from './callback.service';
+import {
+  BkashCallbackStrategy,
+  GpCallbackStrategy,
+  NagadCallbackStrategy,
+  RobiCallbackStrategy,
+  SSLCallbackStrategy,
+} from './strategies';
 
 @Module({
-  imports: [SubscriptionModule],
+  imports: [SubscriptionModule, PaymentModule],
   controllers: [CallbackController],
-  providers: [CallbackService],
+  providers: [
+    CallbackService,
+    CallbackStrategyFactory,
+    GpCallbackStrategy,
+    // Strategies
+    RobiCallbackStrategy,
+    BkashCallbackStrategy,
+    SSLCallbackStrategy,
+    NagadCallbackStrategy,
+  ],
   exports: [CallbackService],
 })
 export class CallbackModule {}

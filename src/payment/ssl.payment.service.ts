@@ -43,7 +43,10 @@ export class SSLPaymentService {
   ) {
     this.config = {
       ipnUrl: this.configService.get<string>('SSL_IPN_URL', ''),
-      redirectUrl: this.configService.get<string>('SSL_REDIRECT_URL', ''),
+      redirectUrl: this.configService.get<string>(
+        'COMMON_REDIRECT_URL',
+        'http://localhost:3080',
+      ),
       storeId: this.configService.get<string>('SSL_STORE_ID') ?? '',
       storePass: this.configService.get<string>('SSL_STORE_PASSWORD') ?? '',
       isLive: true,
@@ -62,15 +65,15 @@ export class SSLPaymentService {
       this.config.isLive,
     );
 
-    const redirectPath = `${this.config.redirectUrl}/${subscriptionId}`;
+    const redirectPath = `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}`;
 
     const payload = {
       total_amount: amount,
       currency: 'BDT',
       tran_id: subscriptionId,
-      success_url: redirectPath,
-      fail_url: redirectPath,
-      cancel_url: redirectPath,
+      success_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=SUCCEEDED`,
+      fail_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=FAILED`,
+      cancel_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=CANCELLED`,
       ipn_url: this.config.ipnUrl,
       shipping_method: 'Courier',
       product_name: 'composite product',

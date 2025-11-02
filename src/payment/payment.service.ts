@@ -179,6 +179,7 @@ export class PaymentService {
       ROBI: async () => {
         const robiChargeConfig = chargeConfig.config as RobiChargeConfig;
         const { url, aocTransID } = await this.robiPaymentService.getAocToken({
+          subscriptionId,
           amount,
           currency,
           referenceCode: subscriptionId,

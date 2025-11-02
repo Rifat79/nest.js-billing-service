@@ -7,7 +7,8 @@ import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
 import { CallbackResult } from '../interfaces/callback.interface';
 
 interface SslCallbackQuery {
-  tran_id: string;
+  tran_id?: string;
+  status: 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 }
 
 @Injectable()
@@ -32,7 +33,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
 
   async handle(query: SslCallbackQuery): Promise<CallbackResult> {
     const { urls, subscription_id } = this.subscriptionData;
-    const { tran_id } = query;
+    const { tran_id, status } = query;
     const traceId = `ssl-callback-${subscription_id}`;
 
     this.logger.info({
@@ -42,8 +43,26 @@ export class SSLCallbackStrategy implements CallbackStrategy {
       traceId,
     });
 
+    if (status === 'CANCELLED') {
+      return {
+        redirectUrl: urls.deny,
+        status: SubscriptionStatus.CONSENT_REJECTED,
+        remarks: '',
+      };
+    }
+
+    if (status === 'FAILED') {
+      return {
+        redirectUrl: urls.error,
+        status: SubscriptionStatus.CONSENT_FAILED,
+        remarks: '',
+      };
+    }
+
     const paymentStatus =
-      await this.sslPaymentService.queryPaymentStatusWithTransactionId(tran_id);
+      await this.sslPaymentService.queryPaymentStatusWithTransactionId(
+        tran_id ?? '#',
+      );
     const normalizedStatus = paymentStatus?.toUpperCase();
 
     if (

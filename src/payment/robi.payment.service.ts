@@ -17,6 +17,7 @@ export interface RobiChargeConfig {
 }
 
 export interface RobiChargeRequestPayload {
+  subscriptionId: string;
   currency: string;
   amount: number;
   referenceCode: string;
@@ -60,7 +61,10 @@ export class RobiPaymentService {
     this.config = {
       baseUrl: this.configService.get<string>('ROBI_BASE_URL') ?? '',
       timeout: this.configService.get<number>('ROBI_TIMEOUT') ?? 5000,
-      callbackUrl: this.configService.get<string>('ROBI_CALLBACK_URL') ?? '',
+      callbackUrl: this.configService.get<string>(
+        'COMMON_REDIRECT_URL',
+        'http://localhost:3080',
+      ),
       aocPageUrl: this.configService.get<string>('ROBI_AOC_PAGE_URL') ?? '',
     };
     this.logger.setContext(RobiPaymentService.name);
@@ -85,7 +89,7 @@ export class RobiPaymentService {
       channel: config.channel,
       operator: 'ROBI',
       taxAmount: 0,
-      callbackURL: `${this.config.callbackUrl}/${referenceCode}`,
+      callbackURL: `${this.config.callbackUrl.replace(':subscriptionId', data.subscriptionId)}`,
       contactInfo: config.contactInfo,
       isSubscription: true,
       subscriptionID: config.subscriptionName,

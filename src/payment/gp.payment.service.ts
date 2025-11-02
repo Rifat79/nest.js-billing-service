@@ -128,9 +128,11 @@ export class GpPaymentService {
         config,
       } = data;
 
-      const API_GATEWAY_BASE_URL =
-        this.configService.get<string>('app.apiGwBaseUrl');
       const url = this.config.baseUrl + '/partner/v3/consent/prepare';
+      const redirectUrl = this.configService.get<string>(
+        'COMMON_REDIRECT_URL',
+        'http://localhost:3080',
+      );
 
       const payload = {
         amount,
@@ -138,9 +140,9 @@ export class GpPaymentService {
         productDescription,
         subscriptionPeriod: this.getSubscriptionPeriod(durationCountDays),
         urls: {
-          ok: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=success`,
-          deny: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=cancel`,
-          error: `${API_GATEWAY_BASE_URL}/api/v2/billing/redirection/${subscriptionId}?status=fail`,
+          ok: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=success`,
+          deny: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=cancel`,
+          error: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=fail`,
         },
         msisdn,
         merchant: config.keyword,

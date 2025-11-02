@@ -43,7 +43,10 @@ export class BkashPaymentService {
     this.config = {
       baseUrl: this.configService.get('BKASH_RECURRING_BASE_URL') ?? '',
       timeout: this.configService.get('BKASH_TIMEOUT') ?? 5000,
-      callbackUrl: this.configService.get('BKASH_CALLBACK_URL') ?? '',
+      callbackUrl: this.configService.get<string>(
+        'COMMON_REDIRECT_URL',
+        'http://localhost:3080',
+      ),
     };
   }
 
@@ -69,7 +72,7 @@ export class BkashPaymentService {
         payer: null,
         payerType: 'CUSTOMER',
         paymentType: 'FIXED',
-        redirectUrl: `${this.config.callbackUrl}/${data.subscriptionRequestId}`,
+        redirectUrl: `${this.config.callbackUrl.replace(':subscriptionId', data.subscriptionRequestId)}`,
         subscriptionRequestId: data.subscriptionRequestId,
         subscriptionReference: data.subscriptionRequestId,
         extraParams: null,

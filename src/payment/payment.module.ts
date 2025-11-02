@@ -19,6 +19,15 @@ import { SSLPaymentService } from './ssl.payment.service';
     SSLPaymentService,
     NagadPaymentService,
   ],
-  exports: [PaymentService],
+  exports: [
+    PaymentService,
+    GpPaymentService,
+    BanglalinkPaymentService,
+    RobiPaymentService,
+    BkashPaymentService,
+    BkashPaymentService,
+    SSLPaymentService,
+    NagadPaymentService,
+  ],
 })
 export class PaymentModule {}
