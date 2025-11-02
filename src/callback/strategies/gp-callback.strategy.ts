@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
 import {
   GpChargeConfig,
   GpChargePayload,
@@ -8,26 +9,13 @@ import {
 } from 'src/payment/gp.payment.service';
 import { SubscriptionData } from 'src/subscription/subscription.service';
 import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
+import { CallbackResult } from '../interfaces/callback.interface';
 
-export interface GpCallbackQuery {
+interface GpCallbackQuery {
   status: string;
   customerReference: string;
   consentId: string;
   reason?: string;
-}
-
-export enum CallbackStatus {
-  CONSENT_REJECTED = 'CONSENT_REJECTED',
-  CONSENT_FAILED = 'CONSENT_FAILED',
-  ACTIVE = 'ACTIVE',
-  PENDING_ACTIVATION = 'PENDING_ACTIVATION',
-  ACTIVATION_FAILED = 'ACTIVATION_FAILED',
-}
-
-export interface CallbackResult {
-  redirectUrl: string;
-  status: CallbackStatus;
-  remarks?: string;
 }
 
 @Injectable()
@@ -64,7 +52,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (status === 'cancel') {
       return {
         redirectUrl: urls.deny,
-        status: CallbackStatus.CONSENT_REJECTED,
+        status: SubscriptionStatus.CONSENT_REJECTED,
         remarks: reason,
       };
     }
@@ -72,7 +60,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (status === 'fail') {
       return {
         redirectUrl: urls.error,
-        status: CallbackStatus.CONSENT_FAILED,
+        status: SubscriptionStatus.CONSENT_FAILED,
         remarks: reason,
       };
     }
@@ -93,7 +81,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (response.success) {
       return {
         redirectUrl: urls.success,
-        status: CallbackStatus.ACTIVE,
+        status: SubscriptionStatus.ACTIVE,
       };
     }
 
@@ -115,7 +103,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
       if (rechargeUrl) {
         return {
           redirectUrl: rechargeUrl,
-          status: CallbackStatus.PENDING_ACTIVATION,
+          status: SubscriptionStatus.PENDING_ACTIVATION,
         };
       }
     }
@@ -126,7 +114,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     );
     return {
       redirectUrl: urls.error,
-      status: CallbackStatus.ACTIVATION_FAILED,
+      status: SubscriptionStatus.ACTIVATION_FAILED,
     };
   }
 }

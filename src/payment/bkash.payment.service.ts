@@ -28,6 +28,9 @@ interface CreateSubscriptionResponse {
   [key: string]: unknown;
 }
 
+interface BkashCheckPaymentStatusResponse {
+  status: string;
+}
 @Injectable()
 export class BkashPaymentService {
   private readonly config: BkashPaymentServiceConfig;
@@ -103,6 +106,32 @@ export class BkashPaymentService {
       );
       throw error;
     }
+  }
+
+  async queryPaymentStatusWithRequestId(
+    requestId: string,
+    config: BkashChargeConfig,
+  ): Promise<string | null> {
+    const url =
+      this.config.baseUrl + '/subscriptions/request-id' + '/' + requestId;
+
+    const response = await this.httpClient.get<BkashCheckPaymentStatusResponse>(
+      url,
+      {
+        headers: this.getHeaders(config.apiKey),
+        timeout: this.config.timeout,
+      },
+    );
+
+    if (response.error && !response.data?.status) {
+      this.logger.warn(
+        { requestId, error: response.error },
+        'Bkash payment status query failed',
+      );
+      return null;
+    }
+
+    return response.data?.status ?? null;
   }
 
   private getHeaders(apiKey: string | undefined) {
