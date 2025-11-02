@@ -21,6 +21,11 @@ interface CreatePaymentResponse {
   [key: string]: unknown;
 }
 
+interface VerifyPaymentResponse {
+  status: string;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class NagadPaymentService {
   private readonly config: NagadPaymentServiceConfig;
@@ -88,5 +93,16 @@ export class NagadPaymentService {
       this.logger.error(data, 'Nagad create payment catch block error');
       throw error;
     }
+  }
+
+  async verifyPayment(paymentRefId: string): Promise<string | null> {
+    const url = `${this.config.paymentVerifyApi}?paymentRefId=${paymentRefId}`;
+    const response = await this.httpClient.get<VerifyPaymentResponse>(url);
+
+    if (response.error || !response.data?.status) {
+      return null;
+    }
+
+    return response.data.status;
   }
 }

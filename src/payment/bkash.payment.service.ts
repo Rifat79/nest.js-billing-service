@@ -123,7 +123,7 @@ export class BkashPaymentService {
       },
     );
 
-    if (response.error && !response.data?.status) {
+    if (response.error || !response.data?.status) {
       this.logger.warn(
         { requestId, error: response.error },
         'Bkash payment status query failed',

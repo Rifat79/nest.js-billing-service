@@ -25,6 +25,14 @@ interface SSLInitResponse {
   [key: string]: unknown;
 }
 
+export interface ElementStatus {
+  status: string;
+}
+
+export interface ElementWrapper {
+  element: ElementStatus[];
+}
+
 @Injectable()
 export class SSLPaymentService {
   private readonly config: SSLPaymentServiceConfig;
@@ -128,5 +136,25 @@ export class SSLPaymentService {
       );
       throw error;
     }
+  }
+
+  async queryPaymentStatusWithTransactionId(
+    tran_id: string,
+  ): Promise<string | null> {
+    const ssl = new SSLCommerzPayment(
+      this.config.storeId,
+      this.config.storePass,
+      this.config.isLive,
+    );
+
+    const response = (await ssl.transactionQueryByTransactionId({
+      tran_id,
+    })) as ElementWrapper;
+
+    if (!response?.element?.[0]?.status) {
+      return null;
+    }
+
+    return response?.element?.[0]?.status;
   }
 }

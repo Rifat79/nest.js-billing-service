@@ -41,6 +41,13 @@ interface AocTokenResponse {
   };
 }
 
+interface AocChargingStatusResponse {
+  data: {
+    transactionOperationStatus: string;
+    [key: string]: unknown;
+  };
+}
+
 @Injectable()
 export class RobiPaymentService {
   private readonly config: RobiPaymentServiceConfig;
@@ -132,5 +139,30 @@ export class RobiPaymentService {
       );
       throw error;
     }
+  }
+
+  async getAocChargingStatus(
+    aocTransID: string,
+    chargeConfig: RobiChargeConfig,
+  ): Promise<string | null> {
+    const url = this.config.baseUrl + '/chargeStatus';
+
+    const payload = {
+      aocTransID,
+      apiKey: chargeConfig.apiKey,
+      username: chargeConfig.username,
+    };
+
+    const response = await this.httpClient.post<AocChargingStatusResponse>(
+      url,
+      payload,
+      { timeout: this.config.timeout },
+    );
+
+    if (response.error || !response.data?.data.transactionOperationStatus) {
+      return null;
+    }
+
+    return response.data.data.transactionOperationStatus;
   }
 }
