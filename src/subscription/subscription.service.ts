@@ -31,6 +31,7 @@ export interface SubscriptionData {
   paymentProvider: string;
   initialPaymentAmount: number;
   chargeConfig: Record<string, any>;
+  durationCountDays: number;
 }
 
 @Injectable()
@@ -114,6 +115,7 @@ export class SubscriptionsService {
         paymentProvider,
         initialPaymentAmount: getChargeUrlPayload.initialPaymentAmount,
         chargeConfig,
+        durationCountDays: product.product_plans[0].billing_cycle_days,
       };
       await this.redis.set(`subscriptions:${subscriptionId}`, subscriptionData);
 

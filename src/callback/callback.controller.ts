@@ -32,7 +32,10 @@ export class CallbackController {
     return {
       statusCode: 302,
       headers: {
-        Location: await this.callbackService.resolveUrl(subscriptionId ?? '#'),
+        Location: await this.callbackService.resolveUrl(
+          subscriptionId ?? '#',
+          payload.query,
+        ),
       },
       body: null,
     };
