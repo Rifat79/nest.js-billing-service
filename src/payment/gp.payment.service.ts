@@ -10,6 +10,18 @@ const transactionSourceChannel = {
   others: 'Others', // When traffic initiated from any other digital marketing channel like google, facebook, affiliated marketing etc.
 };
 
+export enum GpErrorCode {
+  INSUFFICIENT_BALANCE = 'POL1000',
+  CONSENT_REFUSED = 'POL0253',
+  EXPIRED_REFERENCE = 'POL0001',
+  BARRED_USER = 'POL2003',
+  RATE_LIMITED = 'SVC1000',
+  INVALID_REFERENCE = 'SVC0002',
+  NO_VALID_ADDRESS = 'SVC0004',
+  CHARGE_NOT_APPLIED = 'SVC0270',
+  THRESHOLD_EXCEEDED = 'POL1001',
+}
+
 interface GpServiceException {
   messageId: string;
   text: string;
@@ -20,6 +32,9 @@ interface GpPolicyException {
   messageId: string;
   text: string;
   variables?: string[];
+}
+interface RechargeAndBuyResponse {
+  continueUrl: string;
 }
 
 interface GpRequestError {
@@ -66,14 +81,14 @@ type PrepareConsentData = {
   config: GpChargeConfig;
 };
 
-interface GpChargePayload {
+export interface GpChargePayload {
   customerReference: string;
   consentId: string;
   subscriptionId: string;
   validity: number;
   amount: number;
   chargeConfig: GpChargeConfig;
-  channel?: string;
+  channel?: string | null;
 }
 export interface GpChargeConfig {
   keyword: string;
@@ -147,10 +162,12 @@ export class GpPaymentService {
     }
   }
 
-  async chargeWithConsent(data: GpChargePayload) {
-    const url =
-      this.config.baseUrl +
-      `/partner/payment/v1/${data.customerReference}/transactions/amount`;
+  async chargeWithConsent(data: GpChargePayload): Promise<{
+    success: boolean;
+    messageId?: string;
+    messageText?: string;
+  }> {
+    const url = `${this.config.baseUrl}/partner/payment/v1/${data.customerReference}/transactions/amount`;
 
     const payload = {
       amountTransaction: {
@@ -162,9 +179,7 @@ export class GpPaymentService {
             description: data.chargeConfig.description,
           },
           chargingMetaData: {
-            channel: data.channel
-              ? data.channel
-              : transactionSourceChannel.selfWeb,
+            channel: data.channel ?? transactionSourceChannel.selfWeb,
             mandateId: {
               renew: true,
               subscription: data.subscriptionId,
@@ -183,13 +198,13 @@ export class GpPaymentService {
       },
     };
 
+    const traceId = `charge-${data.subscriptionId}`;
     const response = await this.httpClient.post(
       url,
       payload,
       this.getAuthHeaders(),
+      traceId,
     );
-
-    const success = response.status >= 200 && response.status < 300;
 
     if (response.error) {
       const errData = response.data as GpChargeErrorResponse;
@@ -207,19 +222,22 @@ export class GpPaymentService {
         messageId,
         messageText,
         variables,
+        traceId,
       });
 
       return {
-        success,
+        success: false,
         messageId,
         messageText,
       };
     }
 
-    return { success };
+    return { success: true };
   }
 
-  async initRechargeAndBuy(data: InitRechargeAndBuyPayload) {
+  async initRechargeAndBuy(
+    data: InitRechargeAndBuyPayload,
+  ): Promise<string | null> {
     const url =
       this.config.baseUrl +
       `/partner/payment/v1/${data.customerReference}/transactions/recharge/prepare`;
@@ -234,22 +252,34 @@ export class GpPaymentService {
       },
     };
 
-    const response = await this.httpClient.post(
+    const traceId = `recharge-${data.originalPaymentReference}`;
+    const response = await this.httpClient.post<RechargeAndBuyResponse>(
       url,
       payload,
       this.getAuthHeaders(),
+      traceId,
     );
 
-    if (response.error) {
-      return {
-        success: false,
-      };
+    if (response.error || !response.data?.continueUrl) {
+      this.logger.warn({
+        msg: 'Recharge and buy failed',
+        subscriptionId: data.originalPaymentReference,
+        customerReference: data.customerReference,
+        traceId,
+        error: response.error,
+      });
+      return null;
     }
 
-    return {
-      success: true,
-      url: response.data.continueUrl,
-    };
+    this.logger.info({
+      msg: 'Recharge and buy initiated',
+      subscriptionId: data.originalPaymentReference,
+      customerReference: data.customerReference,
+      continueUrl: response.data.continueUrl,
+      traceId,
+    });
+
+    return response.data.continueUrl;
   }
 
   private getAuthHeaders() {

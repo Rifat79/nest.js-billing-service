@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import {
   GpChargeConfig,
+  GpChargePayload,
+  GpErrorCode,
   GpPaymentService,
 } from 'src/payment/gp.payment.service';
 import { SubscriptionData } from 'src/subscription/subscription.service';
@@ -12,6 +14,20 @@ export interface GpCallbackQuery {
   customerReference: string;
   consentId: string;
   reason?: string;
+}
+
+export enum CallbackStatus {
+  CONSENT_REJECTED = 'CONSENT_REJECTED',
+  CONSENT_FAILED = 'CONSENT_FAILED',
+  ACTIVE = 'ACTIVE',
+  PENDING_ACTIVATION = 'PENDING_ACTIVATION',
+  ACTIVATION_FAILED = 'ACTIVATION_FAILED',
+}
+
+export interface CallbackResult {
+  redirectUrl: string;
+  status: CallbackStatus;
+  remarks?: string;
 }
 
 @Injectable()
@@ -34,16 +50,21 @@ export class GpCallbackStrategy implements CallbackStrategy {
     return this;
   }
 
-  async handle(query: GpCallbackQuery): Promise<{ redirectUrl: string }> {
+  async handle(query: GpCallbackQuery): Promise<CallbackResult> {
     const { initialPaymentAmount, urls, subscription_id, durationCountDays } =
       this.subscriptionData;
     const { status, customerReference, consentId, reason } = query;
     const chargeConfig = this.subscriptionData.chargeConfig as GpChargeConfig;
 
+    this.logger.info(
+      { subscriptionId: subscription_id, status },
+      'Received GP callback',
+    );
+
     if (status === 'cancel') {
       return {
         redirectUrl: urls.deny,
-        status: 'CONSENT_REJECTED',
+        status: CallbackStatus.CONSENT_REJECTED,
         remarks: reason,
       };
     }
@@ -51,18 +72,19 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (status === 'fail') {
       return {
         redirectUrl: urls.error,
-        status: 'CONSENT_FAILED',
+        status: CallbackStatus.CONSENT_FAILED,
         remarks: reason,
       };
     }
 
-    const chargePayload = {
+    const chargePayload: GpChargePayload = {
       customerReference,
       consentId,
       subscriptionId: subscription_id,
       validity: durationCountDays,
       amount: initialPaymentAmount,
       chargeConfig,
+      channel: null,
     };
 
     const response =
@@ -71,14 +93,17 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (response.success) {
       return {
         redirectUrl: urls.success,
-        status: 'ACTIVE',
-        remarks: '',
+        status: CallbackStatus.ACTIVE,
       };
     }
 
-    if (response.messageId === 'POL1000') {
-      // Low balance; init recharge and buy
-      const rechargeResponse = await this.gpPaymentService.initRechargeAndBuy({
+    if (response.messageId === GpErrorCode.INSUFFICIENT_BALANCE) {
+      this.logger.info(
+        { subscriptionId: subscription_id },
+        'Low balance detected, initiating recharge',
+      );
+
+      const rechargeUrl = await this.gpPaymentService.initRechargeAndBuy({
         paymentReference: crypto.randomUUID(),
         originalPaymentReference: subscription_id,
         customerReference,
@@ -87,19 +112,21 @@ export class GpCallbackStrategy implements CallbackStrategy {
         denyUrl: urls.deny,
       });
 
-      if (rechargeResponse?.success) {
+      if (rechargeUrl) {
         return {
-          redirectUrl: rechargeResponse.url,
-          status: 'PENDING_ACTIVATION',
-          remarks: '',
+          redirectUrl: rechargeUrl,
+          status: CallbackStatus.PENDING_ACTIVATION,
         };
       }
     }
 
+    this.logger.error(
+      { subscriptionId: subscription_id },
+      'GP activation failed',
+    );
     return {
       redirectUrl: urls.error,
-      status: 'ACTIVATION_FAILED',
-      remarks: '',
+      status: CallbackStatus.ACTIVATION_FAILED,
     };
   }
 }
