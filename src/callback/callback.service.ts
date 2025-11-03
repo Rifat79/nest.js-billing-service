@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { PaymentProvider } from 'src/common/enums/payment-providers';
 import {
   SubscriptionEvent,
   SubscriptionStatus,
@@ -65,7 +66,7 @@ export class CallbackService {
             next_billing_at:
               status === SubscriptionStatus.ACTIVE ? nextBillingAt : null,
             consent_id:
-              subscriptionData.paymentProvider.toUpperCase() === 'GP'
+              subscriptionData.paymentProvider === PaymentProvider.GRAMEENPHONE
                 ? (query as GpCallbackQuery)?.consentId
                 : null,
             consent_timestamp: consentTimestamp,
@@ -85,6 +86,7 @@ export class CallbackService {
               ? 'SUCCEEDED'
               : 'FAILED',
           amount: subscriptionData.initialPaymentAmount,
+          currency: subscriptionData.currency ?? 'BDT',
           requestPayload: result.billingContext?.requestPayload,
           response: result.billingContext?.response,
           duration: result.billingContext?.response?.duration ?? 0,
@@ -140,6 +142,7 @@ export class CallbackService {
     eventType,
     status,
     amount,
+    currency,
     requestPayload,
     response,
     duration,
@@ -148,6 +151,7 @@ export class CallbackService {
     eventType: string;
     status: string;
     amount: number;
+    currency: string;
     requestPayload: any;
     response: { code?: string; message?: string; payload?: any };
     duration: number;
@@ -164,7 +168,7 @@ export class CallbackService {
       event_type: eventType,
       status,
       amount,
-      currency: 'BDT',
+      currency,
       request_payload: { requestPayload },
       response_code: response.code,
       response_message: response.message,

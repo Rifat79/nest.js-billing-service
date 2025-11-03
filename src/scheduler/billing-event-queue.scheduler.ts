@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PinoLogger } from 'nestjs-pino';
 import { BILLING_EVENT_LOG_QUEUE } from 'src/common/redis/redis.constants';
 import { RedisService } from 'src/common/redis/redis.service';
+import { BillingEvent } from 'src/database/billing-event.repository';
 import { SubscriptionsService } from 'src/subscription/subscription.service';
 
 @Injectable()
@@ -17,14 +18,14 @@ export class BillingEventQueueScheduler {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async handleQueue(): Promise<void> {
-    const payloads: any[] = [];
+    const payloads: BillingEvent[] = [];
 
     try {
       let item: string | null;
 
       while ((item = await this.redis.lpop(BILLING_EVENT_LOG_QUEUE))) {
         try {
-          const parsed = JSON.parse(item);
+          const parsed = JSON.parse(item) as BillingEvent;
           payloads.push(parsed);
         } catch (error) {
           this.logger.warn(

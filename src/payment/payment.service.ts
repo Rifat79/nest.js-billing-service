@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { charging_configurations, payment_channels } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
+import { PaymentProvider } from 'src/common/enums/payment-providers';
 import {
   ChargeConfigNotFoundException,
   NoUrlReturnedException,
@@ -26,7 +27,7 @@ interface ChargingUrlParams {
   msisdn: string;
   amount: number;
   currency: string;
-  paymentProvider: string;
+  paymentProvider: PaymentProvider;
   subscriptionId: string;
   productDescription: string;
   initialPaymentAmount: number;

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PinoLogger } from 'nestjs-pino';
+import { PaymentProvider } from 'src/common/enums/payment-providers';
 import { RabbitMQProducerService } from 'src/common/rabbitmq/rabbitmq.service';
 import { RedisService } from 'src/common/redis/redis.service';
 
@@ -11,7 +12,7 @@ export interface NotificationPayload {
   merchantTransactionId: string;
   keyword: string;
   msisdn: string;
-  paymentProvider: string; // 'ROBI' | 'GP';
+  paymentProvider: PaymentProvider;
   eventType:
     | 'renew.success'
     | 'renew.fail'

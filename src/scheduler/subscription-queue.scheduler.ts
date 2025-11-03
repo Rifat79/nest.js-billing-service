@@ -20,7 +20,7 @@ export class SubscriptionQueueScheduler {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async handleQueue(): Promise<void> {
-    const payloads: any[] = [];
+    const payloads: SubscriptionData[] = [];
 
     try {
       let item: string | null;

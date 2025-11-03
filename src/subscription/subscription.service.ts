@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { subscription_status } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
+import { PaymentProvider } from 'src/common/enums/payment-providers';
 import { RedisService } from 'src/common/redis/redis.service';
+import {
+  BillingEvent,
+  BillingEventRepository,
+} from 'src/database/billing-event.repository';
 import {
   SubscriptionRepository,
   SubscriptionsCreateInput,
@@ -38,7 +43,7 @@ export interface SubscriptionData {
     deny: string;
     error: string;
   };
-  paymentProvider: string;
+  paymentProvider: PaymentProvider;
   initialPaymentAmount: number;
   currency: string;
   chargeConfig: Record<string, any>;
@@ -53,6 +58,7 @@ export class SubscriptionsService {
     private readonly paymentService: PaymentService,
     private readonly redis: RedisService,
     private readonly subscriptionRepo: SubscriptionRepository,
+    private readonly billingEventRepo: BillingEventRepository,
   ) {}
 
   async createSubscription(
@@ -174,7 +180,9 @@ export class SubscriptionsService {
     await this.subscriptionRepo.createBatch(prismaBatchData);
   }
 
-  async persistBillingEvents(data: any) {}
+  async persistBillingEvents(data: BillingEvent[]): Promise<void> {
+    await this.billingEventRepo.createBatch(data);
+  }
 
   // async cancelSubscription() {
   //   return 0;
