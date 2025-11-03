@@ -7,9 +7,25 @@ export default registerAs('rmq', () => {
     port: validatedEnv.RMQ_PORT,
     user: validatedEnv.RMQ_USER,
     password: validatedEnv.RMQ_PASS,
-    queue: validatedEnv.NOTIFICATION_QUEUE_NAME,
+    queues: {
+      notifications: 'notifications.subscription.queue',
+      notificationsDlq: 'notifications.subscription.dlq',
+    },
+    exchanges: {
+      notifications: 'notifications.subscription.exchange',
+      notificationsDlq: 'notifications.subscription.dlq.exchange',
+    },
+    routingKeys: {
+      notification: 'notifications.subscription.send',
+      notificationDlq: 'notifications.subscription.dlq',
+    },
+    retryAttempts: 3,
+    retryDelay: 5000,
+
     get url() {
-      return `amqp://${this.user}:${this.password}@${this.host}:${this.port}`;
+      const user = encodeURIComponent(this.user); // Encode username
+      const password = encodeURIComponent(this.password); // Encode password
+      return `amqp://${user}:${password}@${this.host}:${this.port}`;
     },
   };
 });

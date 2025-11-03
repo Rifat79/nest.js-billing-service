@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CallbackStrategyNotFoundException } from 'src/common/exceptions/callback.exceptions';
 import { SubscriptionData } from 'src/subscription/subscription.service';
 import { CallbackStrategy } from './interfaces/callback-strategy.interface';
+import { CallbackResult } from './interfaces/callback.interface';
 import {
   BkashCallbackStrategy,
   GpCallbackStrategy,
@@ -41,13 +42,13 @@ export class CallbackStrategyFactory {
   async handleCallback(
     subscriptionData: SubscriptionData,
     query: any,
-  ): Promise<string> {
+  ): Promise<CallbackResult> {
     const strategy = this.getStrategy(subscriptionData.paymentProvider);
 
     const result = await strategy
       .withContext({ subscriptionData })
       .handle(query);
 
-    return result.redirectUrl;
+    return result;
   }
 }

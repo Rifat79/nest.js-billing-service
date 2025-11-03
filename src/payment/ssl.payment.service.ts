@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
+import { RedirectionStatus } from 'src/common/enums/subscription.enums';
 import SSLCommerzPayment from 'sslcommerz-lts';
 
 export interface SSLPaymentServiceConfig {
@@ -71,9 +72,9 @@ export class SSLPaymentService {
       total_amount: amount,
       currency: 'BDT',
       tran_id: subscriptionId,
-      success_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=SUCCEEDED`,
-      fail_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=FAILED`,
-      cancel_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=CANCELLED`,
+      success_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=${RedirectionStatus.SUCCESS}`,
+      fail_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=${RedirectionStatus.FAIL}`,
+      cancel_url: `${this.config.redirectUrl.replace(':subscriptionId', subscriptionId)}?status=${RedirectionStatus.CANCEL}`,
       ipn_url: this.config.ipnUrl,
       shipping_method: 'Courier',
       product_name: 'composite product',

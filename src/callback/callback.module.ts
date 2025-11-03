@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EventPublisherModule } from 'src/event-publisher/event-publisher.module';
 import { PaymentModule } from 'src/payment/payment.module';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { CallbackStrategyFactory } from './callback-strategy.factory';
@@ -13,7 +14,7 @@ import {
 } from './strategies';
 
 @Module({
-  imports: [SubscriptionModule, PaymentModule],
+  imports: [SubscriptionModule, PaymentModule, EventPublisherModule],
   controllers: [CallbackController],
   providers: [
     CallbackService,

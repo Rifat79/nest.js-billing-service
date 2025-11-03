@@ -23,6 +23,7 @@ export interface SubscriptionData {
   updated_at: Date;
 
   // Extra fields for processing later
+  keyword: string;
   urls: {
     success: string;
     deny: string;
@@ -30,6 +31,7 @@ export interface SubscriptionData {
   };
   paymentProvider: string;
   initialPaymentAmount: number;
+  currency: string;
   chargeConfig: Record<string, any>;
   durationCountDays: number;
 }
@@ -111,9 +113,11 @@ export class SubscriptionsService {
         created_at: new Date(),
         updated_at: new Date(),
         // INFO: Extra fields(added for processing later)
+        keyword,
         urls,
         paymentProvider,
         initialPaymentAmount: getChargeUrlPayload.initialPaymentAmount,
+        currency: product.product_plans[0].plan_pricing[0].currency,
         chargeConfig,
         durationCountDays: product.product_plans[0].billing_cycle_days,
       };

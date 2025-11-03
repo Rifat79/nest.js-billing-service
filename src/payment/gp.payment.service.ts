@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
+import { RedirectionStatus } from 'src/common/enums/subscription.enums';
 import { HttpClientService } from 'src/common/http-client/http-client.service';
 
 const transactionSourceChannel = {
@@ -140,9 +141,9 @@ export class GpPaymentService {
         productDescription,
         subscriptionPeriod: this.getSubscriptionPeriod(durationCountDays),
         urls: {
-          ok: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=success`,
-          deny: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=cancel`,
-          error: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=fail`,
+          ok: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=${RedirectionStatus.SUCCESS}`,
+          deny: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=${RedirectionStatus.CANCEL}`,
+          error: `${redirectUrl.replace(':subscriptionId', subscriptionId)}?status=${RedirectionStatus.FAIL}`,
         },
         msisdn,
         merchant: config.keyword,
@@ -168,6 +169,9 @@ export class GpPaymentService {
     success: boolean;
     messageId?: string;
     messageText?: string;
+    requestPayload: any;
+    responsePayload: any;
+    duration: number;
   }> {
     const url = `${this.config.baseUrl}/partner/payment/v1/${data.customerReference}/transactions/amount`;
 
@@ -231,10 +235,18 @@ export class GpPaymentService {
         success: false,
         messageId,
         messageText,
+        requestPayload: payload,
+        responsePayload: response.data,
+        duration: response.duration,
       };
     }
 
-    return { success: true };
+    return {
+      success: true,
+      requestPayload: payload,
+      responsePayload: response.data,
+      duration: response.duration,
+    };
   }
 
   async initRechargeAndBuy(

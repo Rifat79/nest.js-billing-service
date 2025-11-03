@@ -5,3 +5,14 @@ export enum SubscriptionStatus {
   PENDING_ACTIVATION = 'PENDING_ACTIVATION',
   ACTIVATION_FAILED = 'ACTIVATION_FAILED',
 }
+
+export enum SubscriptionEvent {
+  SUBSCRIPTION_INITIAL = 'SUBSCRIPTION_INITIAL',
+  SUBSCRIPTION_ON_DEMAND = 'SUBSCRIPTION_ON_DEMAND',
+}
+
+export enum RedirectionStatus {
+  SUCCESS = 'SUCCEEDED',
+  FAIL = 'FAILED',
+  CANCEL = 'CANCELLED',
+}

@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
+import {
+  RedirectionStatus,
+  SubscriptionStatus,
+} from 'src/common/enums/subscription.enums';
 import { SSLPaymentService } from 'src/payment/ssl.payment.service';
 import { SubscriptionData } from 'src/subscription/subscription.service';
 import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
@@ -8,7 +11,7 @@ import { CallbackResult } from '../interfaces/callback.interface';
 
 interface SslCallbackQuery {
   tran_id?: string;
-  status: 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+  status: RedirectionStatus;
 }
 
 @Injectable()
@@ -43,7 +46,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
       traceId,
     });
 
-    if (status === 'CANCELLED') {
+    if (status === RedirectionStatus.CANCEL) {
       return {
         redirectUrl: urls.deny,
         status: SubscriptionStatus.CONSENT_REJECTED,
@@ -51,7 +54,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
       };
     }
 
-    if (status === 'FAILED') {
+    if (status === RedirectionStatus.FAIL) {
       return {
         redirectUrl: urls.error,
         status: SubscriptionStatus.CONSENT_FAILED,

@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
+import {
+  RedirectionStatus,
+  SubscriptionStatus,
+} from 'src/common/enums/subscription.enums';
 import {
   GpChargeConfig,
   GpChargePayload,
@@ -12,7 +15,7 @@ import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
 import { CallbackResult } from '../interfaces/callback.interface';
 
 interface GpCallbackQuery {
-  status: string;
+  status: RedirectionStatus;
   customerReference: string;
   consentId: string;
   reason?: string;
@@ -49,7 +52,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
       'Received GP callback',
     );
 
-    if (status === 'cancel') {
+    if (status === RedirectionStatus.CANCEL) {
       return {
         redirectUrl: urls.deny,
         status: SubscriptionStatus.CONSENT_REJECTED,
@@ -57,7 +60,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
       };
     }
 
-    if (status === 'fail') {
+    if (status === RedirectionStatus.FAIL) {
       return {
         redirectUrl: urls.error,
         status: SubscriptionStatus.CONSENT_FAILED,
@@ -78,10 +81,21 @@ export class GpCallbackStrategy implements CallbackStrategy {
     const response =
       await this.gpPaymentService.chargeWithConsent(chargePayload);
 
+    const billingContext = {
+      requestPayload: chargePayload,
+      response: {
+        code: response.messageId,
+        message: response.messageText,
+        payload: response.responsePayload,
+        duration: response.duration,
+      },
+    };
+
     if (response.success) {
       return {
         redirectUrl: urls.success,
         status: SubscriptionStatus.ACTIVE,
+        billingContext,
       };
     }
 
@@ -103,7 +117,6 @@ export class GpCallbackStrategy implements CallbackStrategy {
       if (rechargeUrl) {
         return {
           redirectUrl: rechargeUrl,
-          status: SubscriptionStatus.PENDING_ACTIVATION,
         };
       }
     }
@@ -115,6 +128,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     return {
       redirectUrl: urls.error,
       status: SubscriptionStatus.ACTIVATION_FAILED,
+      billingContext,
     };
   }
 }

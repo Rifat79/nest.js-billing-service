@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
+import {
+  RedirectionStatus,
+  SubscriptionStatus,
+} from 'src/common/enums/subscription.enums';
 import {
   BkashChargeConfig,
   BkashPaymentService,
@@ -11,7 +14,7 @@ import { CallbackResult } from '../interfaces/callback.interface';
 
 interface BkashCallbackQuery {
   reference: string;
-  status: 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+  status: RedirectionStatus;
 }
 
 @Injectable()
@@ -42,7 +45,7 @@ export class BkashCallbackStrategy implements CallbackStrategy {
       chargeConfig,
     } = this.subscriptionData;
 
-    if (status === 'CANCELLED') {
+    if (status === RedirectionStatus.CANCEL) {
       return {
         redirectUrl: urls.deny,
         status: SubscriptionStatus.CONSENT_REJECTED,
@@ -50,7 +53,7 @@ export class BkashCallbackStrategy implements CallbackStrategy {
       };
     }
 
-    if (status === 'FAILED') {
+    if (status === RedirectionStatus.FAIL) {
       return {
         redirectUrl: urls.error,
         status: SubscriptionStatus.CONSENT_FAILED,
