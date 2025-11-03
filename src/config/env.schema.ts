@@ -53,6 +53,9 @@ export const envSchema = z.object({
   ROBI_BASE_URL: z.string().url(),
   ROBI_AOC_PAGE_URL: z.string().url(),
 
+  // Common
+  COMMON_REDIRECT_URL: z.string().url(),
+
   // log
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
