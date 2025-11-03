@@ -134,6 +134,10 @@ export class SubscriptionsService {
     return this.redis.get<SubscriptionData>(`subscriptions:${subscriptionId}`);
   }
 
+  async persistSubscriptionEvents(data: any) {}
+
+  async persistBillingEvents(data: any) {}
+
   // async cancelSubscription() {
   //   return 0;
   // }

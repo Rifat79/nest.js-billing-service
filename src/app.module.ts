@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CallbackModule } from './callback/callback.module';
@@ -14,6 +13,7 @@ import { EventPublisherModule } from './event-publisher/event-publisher.module';
 import { LoggerModule } from './logger/logger.module';
 import { PaymentModule } from './payment/payment.module';
 import { ProductModule } from './product/product.module';
+import { QueueSchedulerModule } from './scheduler/scheduler.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
@@ -46,7 +46,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 
     EventPublisherModule,
 
-    ScheduleModule.forRoot(),
+    QueueSchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
