@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { subscription_status } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { RedisService } from 'src/common/redis/redis.service';
+import {
+  SubscriptionRepository,
+  SubscriptionsCreateInput,
+} from 'src/database/subscription.repository';
 import { PaymentService } from 'src/payment/payment.service';
 import { ProductService } from 'src/product/product.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,6 +23,11 @@ export interface SubscriptionData {
   status: subscription_status;
   auto_renew: boolean;
   payment_channel_reference_id?: string;
+  consent_id?: string;
+  consent_timestamp?: Date;
+  remarks?: string | null;
+  next_billing_at?: Date | null;
+  charging_configuration_id: number;
   created_at: Date;
   updated_at: Date;
 
@@ -43,6 +52,7 @@ export class SubscriptionsService {
     private readonly productService: ProductService,
     private readonly paymentService: PaymentService,
     private readonly redis: RedisService,
+    private readonly subscriptionRepo: SubscriptionRepository,
   ) {}
 
   async createSubscription(
@@ -110,6 +120,7 @@ export class SubscriptionsService {
         status: 'PENDING_CONSENT',
         auto_renew: product.product_plans[0].billing_model === 'RECURRING',
         ...(aocTransID && { payment_channel_reference_id: aocTransID }),
+        charging_configuration_id: chargeConfig.id,
         created_at: new Date(),
         updated_at: new Date(),
         // INFO: Extra fields(added for processing later)
@@ -118,7 +129,7 @@ export class SubscriptionsService {
         paymentProvider,
         initialPaymentAmount: getChargeUrlPayload.initialPaymentAmount,
         currency: product.product_plans[0].plan_pricing[0].currency,
-        chargeConfig,
+        chargeConfig: chargeConfig.config,
         durationCountDays: product.product_plans[0].billing_cycle_days,
       };
       await this.redis.set(`subscriptions:${subscriptionId}`, subscriptionData);
@@ -134,7 +145,34 @@ export class SubscriptionsService {
     return this.redis.get<SubscriptionData>(`subscriptions:${subscriptionId}`);
   }
 
-  async persistSubscriptionEvents(data: any) {}
+  async persistSubscriptionEvents(data: SubscriptionData[]): Promise<void> {
+    const prismaBatchData: SubscriptionsCreateInput[] = data.map((item) => ({
+      subscription_id: item.subscription_id,
+      msisdn: item.msisdn,
+      payment_channel_id: item.payment_channel_id,
+      merchant_id: item.merchant_id,
+      product_id: item.product_id,
+      plan_id: item.plan_id,
+      plan_pricing_id: item.plan_pricing_id,
+      merchant_transaction_id: item.merchant_transaction_id,
+      status: item.status,
+      auto_renew: item.auto_renew,
+      payment_channel_reference_id: item.payment_channel_reference_id,
+      consent_id: item.consent_id,
+      consent_timestamp: item.consent_timestamp,
+      next_billing_at: item.next_billing_at,
+      remarks: item.remarks,
+      payment_success_count: 1,
+      charging_configuration_id: item.charging_configuration_id,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+
+      // ⚠️ Important: Omit all extra fields (keyword, urls, paymentProvider, etc.)
+      // and all relation fields (payment_channels, merchants, etc.).
+    }));
+
+    await this.subscriptionRepo.createBatch(prismaBatchData);
+  }
 
   async persistBillingEvents(data: any) {}
 

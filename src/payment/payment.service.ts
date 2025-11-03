@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { payment_channels } from '@prisma/client';
+import { charging_configurations, payment_channels } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import {
   ChargeConfigNotFoundException,
@@ -81,9 +81,9 @@ export class PaymentService {
     paymentChannelId: number,
     productId: number,
     planId: number,
-  ): Promise<any> {
+  ): Promise<charging_configurations | null> {
     const cacheKey = `charge_config:${paymentChannelId}:${productId}:${planId}`;
-    const cached = await this.redis.get(cacheKey);
+    const cached = await this.redis.get<charging_configurations>(cacheKey);
 
     if (cached) {
       this.logger.debug({ cacheKey }, 'Charge config cache hit');
@@ -110,7 +110,7 @@ export class PaymentService {
     url: string;
     aocTransID?: string;
     sessionKey?: string;
-    chargeConfig: Record<string, any>;
+    chargeConfig: charging_configurations;
   }> {
     const {
       msisdn,
@@ -151,7 +151,7 @@ export class PaymentService {
       () => Promise<{ url: string; aocTransID?: string; sessionKey?: string }>
     > = {
       GP: async () => {
-        const gpChargeConfig = chargeConfig.config as GpChargeConfig;
+        const gpChargeConfig = chargeConfig.config as unknown as GpChargeConfig;
         const url = await this.gpPaymentService.prepareConsent({
           msisdn,
           amount,
@@ -166,7 +166,8 @@ export class PaymentService {
       },
 
       BL: async () => {
-        const blChargeConfig = chargeConfig.config as BanglalinkChargeConfig;
+        const blChargeConfig =
+          chargeConfig.config as unknown as BanglalinkChargeConfig;
         const url = await this.blPaymentService.initActivation({
           msisdn,
           amount,
@@ -177,7 +178,8 @@ export class PaymentService {
       },
 
       ROBI: async () => {
-        const robiChargeConfig = chargeConfig.config as RobiChargeConfig;
+        const robiChargeConfig =
+          chargeConfig.config as unknown as RobiChargeConfig;
         const { url, aocTransID } = await this.robiPaymentService.getAocToken({
           subscriptionId,
           amount,
@@ -190,7 +192,8 @@ export class PaymentService {
       },
 
       BKASH: async () => {
-        const bkashChargeConfig = chargeConfig.config as BkashChargeConfig;
+        const bkashChargeConfig =
+          chargeConfig.config as unknown as BkashChargeConfig;
         const url = await this.bkashPaymentService.createSubscription({
           amount,
           initialPaymentAmount,
@@ -238,7 +241,7 @@ export class PaymentService {
         throw new NoUrlReturnedException(provider, msisdn, subscriptionId);
       }
 
-      return { ...result, chargeConfig: chargeConfig.config };
+      return { ...result, chargeConfig };
     } catch (error) {
       this.logger.error(
         { provider, msisdn, subscriptionId, error },

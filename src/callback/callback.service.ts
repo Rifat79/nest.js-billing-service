@@ -16,6 +16,7 @@ import {
   SubscriptionsService,
 } from 'src/subscription/subscription.service';
 import { CallbackStrategyFactory } from './callback-strategy.factory';
+import { GpCallbackQuery } from './strategies';
 
 @Injectable()
 export class CallbackService {
@@ -52,6 +53,8 @@ export class CallbackService {
     // publish to queue and send notification
     if (status) {
       const tasks: Promise<any>[] = [];
+      const nextBillingAt =
+        Date.now() + subscriptionData.durationCountDays * 24 * 60 * 60 * 1000;
 
       tasks.push(
         this.redis.rpush(
@@ -59,6 +62,12 @@ export class CallbackService {
           JSON.stringify({
             ...subscriptionData,
             status,
+            next_billing_at:
+              status === SubscriptionStatus.ACTIVE ? nextBillingAt : null,
+            consent_id:
+              subscriptionData.paymentProvider.toUpperCase() === 'GP'
+                ? (query as GpCallbackQuery)?.consentId
+                : null,
             consent_timestamp: consentTimestamp,
             remarks,
           }),

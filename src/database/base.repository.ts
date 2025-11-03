@@ -52,6 +52,44 @@ export abstract class BaseRepository<
     }
   }
 
+  /**
+   * Creates multiple records in a single batch operation.
+   *
+   * @param data An array of data objects for the records to be created.
+   * @param skipDuplicates Skips the insertion of records that would violate a unique constraint.
+   * @param tx Optional Prisma transaction client.
+   * @returns The number of records created.
+   */
+  async createMany(
+    data: CreateInput[],
+    skipDuplicates?: boolean,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Prisma.BatchPayload> {
+    const client = tx || this.prisma;
+    try {
+      // The delegate is now strongly typed as M
+      // Prisma's createMany returns a BatchPayload which contains the count of records created.
+      const result: Prisma.BatchPayload = await (
+        this.getDelegate(client) as any
+      ).createMany({
+        data,
+        skipDuplicates,
+      });
+
+      this.logger.info(
+        { model: this.modelName, action: 'createMany', count: result.count },
+        'Multiple records created',
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        { model: this.modelName, error },
+        'CreateMany operation failed',
+      );
+      throw error;
+    }
+  }
+
   async findUnique(
     where: WhereUniqueInput,
     tx?: Prisma.TransactionClient,

@@ -4,6 +4,8 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { BaseRepository } from './base.repository';
 import { PrismaService } from './prisma.service';
 
+export type SubscriptionsCreateInput = Prisma.subscriptionsCreateManyInput;
+
 @Injectable()
 export class SubscriptionRepository extends BaseRepository<
   subscriptions,
@@ -38,5 +40,13 @@ export class SubscriptionRepository extends BaseRepository<
       payment_channel_id: paymentChannelId,
       plan_id: planId,
     });
+  }
+
+  async createBatch(
+    data: Prisma.subscriptionsCreateManyInput[],
+    skipDuplicates?: boolean,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Prisma.BatchPayload> {
+    return super.createMany(data as any, skipDuplicates, tx);
   }
 }

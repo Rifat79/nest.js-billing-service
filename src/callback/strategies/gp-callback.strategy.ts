@@ -14,7 +14,7 @@ import { SubscriptionData } from 'src/subscription/subscription.service';
 import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
 import { CallbackResult } from '../interfaces/callback.interface';
 
-interface GpCallbackQuery {
+export interface GpCallbackQuery {
   status: RedirectionStatus;
   customerReference: string;
   consentId: string;

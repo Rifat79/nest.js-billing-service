@@ -8,6 +8,7 @@ import { PlanRepository } from './plan.repository';
 import { PrismaBatchService } from './prisma-batch.service';
 import { PrismaService } from './prisma.service';
 import { ProductRepository } from './product.repository';
+import { SubscriptionRepository } from './subscription.repository';
 import { TransactionService } from './transaction.service';
 
 export interface PrismaModuleOptions {
@@ -39,6 +40,7 @@ export class PrismaModule {
         PlanPricingRepository,
         ChargeConfigRepository,
         NagadCustomerRepository,
+        SubscriptionRepository,
       ],
       exports: [
         PrismaService,
@@ -53,6 +55,7 @@ export class PrismaModule {
         PlanPricingRepository,
         ChargeConfigRepository,
         NagadCustomerRepository,
+        SubscriptionRepository,
       ],
     };
   }
@@ -72,6 +75,7 @@ export class PrismaModule {
         PlanPricingRepository,
         ChargeConfigRepository,
         NagadCustomerRepository,
+        SubscriptionRepository,
       ],
       exports: [
         PrismaService,
@@ -85,6 +89,7 @@ export class PrismaModule {
         PlanPricingRepository,
         ChargeConfigRepository,
         NagadCustomerRepository,
+        SubscriptionRepository,
       ],
     };
   }

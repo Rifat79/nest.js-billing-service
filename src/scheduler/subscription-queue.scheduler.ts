@@ -3,7 +3,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PinoLogger } from 'nestjs-pino';
 import { SUBSCRIPTION_POST_CONSENT_QUEUE } from 'src/common/redis/redis.constants';
 import { RedisService } from 'src/common/redis/redis.service';
-import { SubscriptionsService } from 'src/subscription/subscription.service';
+import {
+  SubscriptionData,
+  SubscriptionsService,
+} from 'src/subscription/subscription.service';
 
 @Injectable()
 export class SubscriptionQueueScheduler {
@@ -24,7 +27,7 @@ export class SubscriptionQueueScheduler {
 
       while ((item = await this.redis.lpop(SUBSCRIPTION_POST_CONSENT_QUEUE))) {
         try {
-          const parsed = JSON.parse(item);
+          const parsed = JSON.parse(item) as SubscriptionData;
           payloads.push(parsed);
         } catch (error) {
           this.logger.warn(
