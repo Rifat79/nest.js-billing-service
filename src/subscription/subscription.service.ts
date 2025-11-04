@@ -253,7 +253,7 @@ export class SubscriptionsService {
       (subscriptionData.status as SubscriptionStatus) !==
         SubscriptionStatus.ACTIVE &&
       (subscriptionData.status as SubscriptionStatus) !==
-        SubscriptionStatus.SUSPENDED_PAYMENT_FAILED
+        SubscriptionStatus.GRACE
     ) {
       return {
         success: false,

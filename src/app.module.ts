@@ -15,6 +15,7 @@ import { PaymentModule } from './payment/payment.module';
 import { ProductModule } from './product/product.module';
 import { QueueSchedulerModule } from './scheduler/scheduler.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -36,9 +37,13 @@ import { SubscriptionModule } from './subscription/subscription.module';
       serviceName: 'billing-service',
     }),
 
+    // Core Modules
+
     SubscriptionModule,
 
     CallbackModule,
+
+    WebhookModule,
 
     ProductModule,
 
