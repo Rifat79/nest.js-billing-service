@@ -31,6 +31,11 @@ interface CreateSubscriptionResponse {
 interface BkashCheckPaymentStatusResponse {
   status: string;
 }
+
+interface BkashCancelSubscriptionResponse {
+  subscriptionStatus: string;
+  [key: string]: unknown;
+}
 @Injectable()
 export class BkashPaymentService {
   private readonly config: BkashPaymentServiceConfig;
@@ -135,6 +140,69 @@ export class BkashPaymentService {
     }
 
     return response.data?.status ?? null;
+  }
+
+  async cancelSubscription({
+    paymentChannelReferenceId,
+    config,
+  }: {
+    paymentChannelReferenceId: string;
+    config: BkashChargeConfig;
+  }): Promise<boolean> {
+    const traceId = `bkash-cancel-${paymentChannelReferenceId}`;
+    const url =
+      this.config.baseUrl +
+      `/subscriptions/${paymentChannelReferenceId}?reason=CancelSubscription`;
+
+    try {
+      this.logger.info(
+        { traceId, paymentChannelReferenceId, url },
+        'Initiating bKash subscription cancellation',
+      );
+
+      const response =
+        await this.httpClient.delete<BkashCancelSubscriptionResponse>(url, {
+          headers: this.getHeaders(config.apiKey),
+          timeout: this.config.timeout,
+        });
+
+      const isSuccessful =
+        response.data?.subscriptionStatus?.toLowerCase() === 'cancelled';
+
+      if (!isSuccessful) {
+        this.logger.warn(
+          {
+            traceId,
+            paymentChannelReferenceId,
+            status: response.status,
+            responseData: response.data,
+          },
+          'bKash subscription cancellation failed: non-200 response',
+        );
+        return false;
+      }
+
+      this.logger.info(
+        {
+          traceId,
+          paymentChannelReferenceId,
+          responseData: response.data,
+        },
+        'bKash subscription cancelled successfully',
+      );
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        {
+          traceId,
+          paymentChannelReferenceId,
+          error,
+        },
+        'Exception during bKash subscription cancellation',
+      );
+      return false;
+    }
   }
 
   private getHeaders(apiKey: string | undefined) {

@@ -2,18 +2,29 @@ import { Injectable } from '@nestjs/common';
 import { subscription_status } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { PaymentProvider } from 'src/common/enums/payment-providers';
+import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
+import {
+  CancellationStrategyNotFoundException,
+  SubscriptionNotFoundException,
+} from 'src/common/exceptions';
 import { RedisService } from 'src/common/redis/redis.service';
 import {
   BillingEvent,
   BillingEventRepository,
 } from 'src/database/billing-event.repository';
 import {
+  SubscriptionDetails,
   SubscriptionRepository,
   SubscriptionsCreateInput,
 } from 'src/database/subscription.repository';
+import { EventPublisherService } from 'src/event-publisher/event-publisher.service';
+import { BanglalinkChargeConfig } from 'src/payment/banglalink.payment.service';
+import { BkashChargeConfig } from 'src/payment/bkash.payment.service';
 import { PaymentService } from 'src/payment/payment.service';
+import { RobiChargeConfig } from 'src/payment/robi.payment.service';
 import { ProductService } from 'src/product/product.service';
 import { v4 as uuidv4 } from 'uuid';
+import { CancelSubscriptionDto } from './dto/cancel-subscription.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 
 export interface SubscriptionData {
@@ -59,6 +70,7 @@ export class SubscriptionsService {
     private readonly redis: RedisService,
     private readonly subscriptionRepo: SubscriptionRepository,
     private readonly billingEventRepo: BillingEventRepository,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
   async createSubscription(
@@ -184,9 +196,175 @@ export class SubscriptionsService {
     await this.billingEventRepo.createBatch(data);
   }
 
-  // async cancelSubscription() {
-  //   return 0;
-  // }
+  async cancelSubscription(
+    data: CancelSubscriptionDto,
+  ): Promise<{ success: boolean; message: string; statusCode: number }> {
+    const { msisdn, transactionId, subscriptionId } = data;
+    const traceId = `cancel-subscription-${subscriptionId ?? transactionId}`;
+
+    let subscriptionData: SubscriptionDetails | null = null;
+
+    if (subscriptionId) {
+      subscriptionData =
+        await this.subscriptionRepo.findSubscriptionDetails(subscriptionId);
+    }
+
+    if (!subscriptionData && msisdn && transactionId) {
+      subscriptionData =
+        await this.subscriptionRepo.findFirstDynamic<SubscriptionDetails>({
+          where: {
+            msisdn,
+            merchant_transaction_id: transactionId,
+          },
+          include: {
+            payment_channels: true,
+            plan_pricing: true,
+            charging_configurations: true,
+            products: true,
+            product_plans: true,
+          },
+        });
+    }
+
+    if (!subscriptionData) {
+      throw new SubscriptionNotFoundException(subscriptionId ?? transactionId);
+    }
+
+    if (
+      !subscriptionData.charging_configurations ||
+      !subscriptionData.plan_pricing
+    ) {
+      this.logger.warn({ traceId }, 'Missing charge config or pricing');
+      return {
+        success: false,
+        message: 'Incomplete subscription data for cancellation',
+        statusCode: 500,
+      };
+    }
+
+    const provider = subscriptionData.payment_channels.code;
+
+    // Map of strategy functions
+    const cancellationStrategies: Record<string, () => Promise<boolean>> = {
+      GP: async () => {
+        return await this.paymentService.gpInvalidateAcr(
+          subscriptionData.payment_channel_reference_id ?? '#',
+        );
+      },
+      BL: async () => {
+        return await this.paymentService.blInitDeactivation({
+          amount: subscriptionData.plan_pricing?.base_amount?.toNumber() ?? 0,
+          requestId: subscriptionData.subscription_id,
+          msisdn: subscriptionData.msisdn,
+          chargeConfig: subscriptionData.charging_configurations
+            ?.config as unknown as BanglalinkChargeConfig,
+        });
+      },
+      ROBI: async () => {
+        return await this.paymentService.robiCancelAocToken({
+          subscriptionId: subscriptionData.subscription_id,
+          msisdn: subscriptionData.msisdn,
+          config: subscriptionData.charging_configurations
+            ?.config as unknown as RobiChargeConfig,
+        });
+      },
+      BKASH: async () => {
+        return await this.paymentService.bkashCancelSubscription({
+          paymentChannelReferenceId: String(
+            subscriptionData.payment_channel_reference_id,
+          ),
+          config: subscriptionData.charging_configurations
+            ?.config as unknown as BkashChargeConfig,
+        });
+      },
+    };
+
+    const strategy = cancellationStrategies[provider];
+
+    if (!strategy) {
+      throw new CancellationStrategyNotFoundException(provider);
+    }
+
+    const executeCancellationStrategy = async (
+      provider: string,
+      strategy: () => Promise<boolean>,
+    ): Promise<boolean> => {
+      try {
+        this.logger.info(
+          { traceId, provider },
+          'Executing cancellation strategy',
+        );
+        return await strategy();
+      } catch (error) {
+        this.logger.error(
+          { traceId, provider, error },
+          'Cancellation strategy failed',
+        );
+        return false;
+      }
+    };
+
+    const isSuccessful = await executeCancellationStrategy(provider, strategy);
+
+    this.logger.info(
+      {
+        traceId,
+        subscriptionId: subscriptionData.subscription_id,
+        provider,
+        success: isSuccessful,
+      },
+      'Cancellation attempt completed',
+    );
+
+    if (isSuccessful) {
+      const updated = await this.subscriptionRepo.update(
+        {
+          subscription_id: subscriptionData.subscription_id,
+        },
+        {
+          status: SubscriptionStatus.CANCELLED,
+          auto_renew: false,
+          remarks: 'Unsubscribed by user',
+        },
+      );
+
+      if (!updated) {
+        this.logger.warn({ traceId }, 'Subscription update failed');
+        return {
+          success: false,
+          message: 'Failed to update subscription status',
+          statusCode: 500,
+        };
+      }
+
+      await this.eventPublisher.sendNotification({
+        id: uuidv4(),
+        source: 'dcb-billing-service',
+        subscriptionId: subscriptionData.subscription_id,
+        merchantTransactionId: subscriptionData.merchant_transaction_id,
+        keyword: subscriptionData.products.name,
+        msisdn: subscriptionData.msisdn,
+        paymentProvider: subscriptionData.payment_channels.code,
+        eventType: 'subscription.cancel',
+        amount: subscriptionData.plan_pricing?.base_amount.toNumber() ?? 0,
+        currency: subscriptionData.plan_pricing?.currency ?? 'BDT',
+        billingCycleDays: subscriptionData.product_plans.billing_cycle_days,
+        timestamp: Date.now(),
+      });
+
+      return {
+        success: true,
+        message: 'Subscription has been cancelled successfully',
+        statusCode: 200,
+      };
+    }
+
+    return {
+      success: false,
+      message: 'Could not cancel the subscription',
+      statusCode: 502,
+    };
+  }
 
   private generateSubscriptionId() {
     return uuidv4();

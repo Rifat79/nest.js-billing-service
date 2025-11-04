@@ -1,10 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, subscriptions } from '@prisma/client';
+import {
+  charging_configurations,
+  payment_channels,
+  plan_pricing,
+  Prisma,
+  product_plans,
+  products,
+  subscriptions,
+} from '@prisma/client';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { BaseRepository } from './base.repository';
 import { PrismaService } from './prisma.service';
 
 export type SubscriptionsCreateInput = Prisma.subscriptionsCreateManyInput;
+
+export type SubscriptionDetails = subscriptions & {
+  payment_channels: payment_channels;
+  products: products;
+  product_plans: product_plans;
+  plan_pricing: plan_pricing | null;
+  charging_configurations: charging_configurations | null;
+};
 
 @Injectable()
 export class SubscriptionRepository extends BaseRepository<
@@ -48,5 +64,18 @@ export class SubscriptionRepository extends BaseRepository<
     tx?: Prisma.TransactionClient,
   ): Promise<Prisma.BatchPayload> {
     return super.createMany(data as any, skipDuplicates, tx);
+  }
+
+  async findSubscriptionDetails(subscriptionId: string) {
+    return this.getDelegate(this.prisma).findUnique({
+      where: { subscription_id: subscriptionId },
+      include: {
+        payment_channels: true,
+        products: true,
+        product_plans: true,
+        plan_pricing: true,
+        charging_configurations: true,
+      },
+    });
   }
 }

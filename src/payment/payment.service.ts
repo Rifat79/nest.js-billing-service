@@ -12,6 +12,7 @@ import { ChargeConfigRepository } from 'src/database/charge-config.repository';
 import { PaymentChannelRepository } from 'src/database/payment-channel.repository';
 import {
   BanglalinkChargeConfig,
+  BanglalinkInitDeactivationPayload,
   BanglalinkPaymentService,
 } from './banglalink.payment.service';
 import {
@@ -20,7 +21,11 @@ import {
 } from './bkash.payment.service';
 import { GpChargeConfig, GpPaymentService } from './gp.payment.service';
 import { NagadPaymentService } from './nagad.payment.service';
-import { RobiChargeConfig, RobiPaymentService } from './robi.payment.service';
+import {
+  RobiCancelAocTokenPayload,
+  RobiChargeConfig,
+  RobiPaymentService,
+} from './robi.payment.service';
 import { SSLPaymentService } from './ssl.payment.service';
 
 interface ChargingUrlParams {
@@ -249,6 +254,187 @@ export class PaymentService {
         'Failed to get charging URL',
       );
       throw error;
+    }
+  }
+
+  async gpInvalidateAcr(customerReference: string): Promise<boolean> {
+    const traceId = `invalidate-acr-${customerReference}`;
+
+    try {
+      const result =
+        await this.gpPaymentService.invalidateACR(customerReference);
+
+      if (!result.success) {
+        this.logger.warn({
+          msg: 'GP ACR invalidation failed',
+          customerReference,
+          traceId,
+          responsePayload: result.responsePayload,
+        });
+        return false;
+      }
+
+      this.logger.info({
+        msg: 'GP ACR invalidated successfully',
+        customerReference,
+        traceId,
+        responsePayload: result.responsePayload,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error({
+        msg: 'Exception during GP ACR invalidation',
+        customerReference,
+        traceId,
+        error,
+      });
+      return false;
+    }
+  }
+
+  async blInitDeactivation(
+    data: BanglalinkInitDeactivationPayload,
+  ): Promise<boolean> {
+    const { msisdn, requestId } = data;
+    const traceId = `bl-deactivation-${requestId}`;
+
+    try {
+      this.logger.info(
+        { msisdn, requestId, traceId },
+        'Initiating Banglalink deactivation',
+      );
+
+      const result = await this.blPaymentService.initDeactivation(data);
+
+      if (!result.success) {
+        this.logger.warn(
+          {
+            msg: 'Banglalink deactivation failed',
+            msisdn,
+            requestId,
+            traceId,
+            responsePayload: result.raw,
+          },
+          'Non-zero response code from Banglalink',
+        );
+        return false;
+      }
+
+      this.logger.info({
+        msg: 'Banglalink deactivation successful',
+        msisdn,
+        requestId,
+        traceId,
+        responsePayload: result.raw,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error({
+        msg: 'Exception during Banglalink deactivation',
+        msisdn,
+        requestId,
+        traceId,
+        error,
+      });
+      return false;
+    }
+  }
+
+  async robiCancelAocToken(data: RobiCancelAocTokenPayload): Promise<boolean> {
+    const { subscriptionId, msisdn, config } = data;
+    const traceId = `robi-cancel-${subscriptionId}`;
+
+    try {
+      this.logger.info(
+        { traceId, msisdn, subscriptionId },
+        'Initiating Robi AOC cancellation',
+      );
+
+      const result = await this.robiPaymentService.cancelAocToken(data);
+
+      if (!result) {
+        this.logger.warn(
+          {
+            msg: 'Robi AOC cancellation failed',
+            msisdn,
+            subscriptionId,
+            traceId,
+          },
+          'Non-zero error code or failed response from Robi',
+        );
+        return false;
+      }
+
+      this.logger.info({
+        msg: 'Robi AOC cancellation successful',
+        msisdn,
+        subscriptionId,
+        traceId,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error({
+        msg: 'Exception during Robi AOC cancellation',
+        msisdn,
+        subscriptionId,
+        traceId,
+        error,
+      });
+      return false;
+    }
+  }
+
+  async bkashCancelSubscription(data: {
+    paymentChannelReferenceId: string;
+    config: BkashChargeConfig;
+  }): Promise<boolean> {
+    const { paymentChannelReferenceId, config } = data;
+    const traceId = `bkash-cancel-${paymentChannelReferenceId}`;
+
+    try {
+      this.logger.info(
+        { traceId, paymentChannelReferenceId },
+        'Initiating bKash subscription cancellation',
+      );
+
+      const success = await this.bkashPaymentService.cancelSubscription({
+        paymentChannelReferenceId,
+        config,
+      });
+
+      if (!success) {
+        this.logger.warn(
+          {
+            traceId,
+            paymentChannelReferenceId,
+          },
+          'bKash subscription cancellation failed',
+        );
+        return false;
+      }
+
+      this.logger.info(
+        {
+          traceId,
+          paymentChannelReferenceId,
+        },
+        'bKash subscription cancelled successfully',
+      );
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        {
+          traceId,
+          paymentChannelReferenceId,
+          error,
+        },
+        'Exception during bKash subscription cancellation',
+      );
+      return false;
     }
   }
 }

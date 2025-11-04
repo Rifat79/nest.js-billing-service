@@ -22,9 +22,27 @@ interface InitActivationPayload {
   chargeConfig: BanglalinkChargeConfig;
 }
 
+export interface BanglalinkInitDeactivationPayload {
+  amount: number;
+  requestId: string;
+  msisdn: string;
+  chargeConfig: BanglalinkChargeConfig;
+}
+
 interface BanglalinkActivationResponse {
   responseCode?: string;
   [key: string]: unknown;
+}
+
+interface BanglalinkDeActivationResponse {
+  responseCode?: string;
+  [key: string]: unknown;
+}
+
+export interface BanglalinkDeactivationResult {
+  success: boolean;
+  responseCode?: string;
+  raw?: BanglalinkDeActivationResponse;
 }
 
 @Injectable()
@@ -106,6 +124,76 @@ export class BanglalinkPaymentService {
           url,
         },
         'Banglalink activation encountered an error',
+      );
+      throw error;
+    }
+  }
+
+  async initDeactivation(
+    data: BanglalinkInitDeactivationPayload,
+  ): Promise<BanglalinkDeactivationResult> {
+    const { msisdn, amount, requestId } = data;
+    const chargeConfig = data.chargeConfig as BanglalinkChargeConfig;
+
+    if (!chargeConfig?.planId || !chargeConfig?.chargeCode) {
+      this.logger.warn(
+        { msisdn, requestId, chargeConfig },
+        'Missing Banglalink charge configuration for deactivation',
+      );
+      throw new Error('Invalid Banglalink charge configuration');
+    }
+
+    const queryObject = {
+      planId: chargeConfig.planId,
+      chargecode: chargeConfig.chargeCode,
+      featureId: 'DEACTIVATION',
+      amount,
+      requestId,
+      msisdn,
+    };
+
+    const url = `${this.config.deactivation}?${this.prepareQueryString(queryObject)}`;
+
+    try {
+      this.logger.info(
+        { msisdn, requestId, url },
+        'Initiating Banglalink deactivation request',
+      );
+
+      const response =
+        await this.httpClient.get<BanglalinkDeActivationResponse>(url, {
+          timeout: this.config.timeout,
+        });
+
+      const responseData = response.data;
+      const isSuccessful = responseData?.responseCode === '0';
+
+      if (!isSuccessful) {
+        this.logger.warn(
+          { msisdn, requestId, responseData },
+          'Banglalink deactivation failed: non-zero response code',
+        );
+      } else {
+        this.logger.info(
+          { msisdn, requestId, responseData },
+          'Banglalink deactivation successful',
+        );
+      }
+
+      return {
+        success: isSuccessful,
+        responseCode: responseData?.responseCode,
+        raw: responseData ?? undefined,
+      };
+    } catch (error) {
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : error,
+          msisdn,
+          requestId,
+          url,
+        },
+        'Banglalink deactivation encountered an error',
       );
       throw error;
     }

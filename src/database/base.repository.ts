@@ -129,6 +129,23 @@ export abstract class BaseRepository<
     }
   }
 
+  async findFirstDynamic<R = T>(
+    args: Prisma.Args<M, 'findFirst'>,
+    tx?: Prisma.TransactionClient,
+  ): Promise<R | null> {
+    const client = tx || this.prisma;
+    try {
+      const result = await (this.getDelegate(client) as any).findFirst(args);
+      return result as R | null;
+    } catch (error) {
+      this.logger.error(
+        { model: this.modelName, error },
+        'FindFirst operation failed',
+      );
+      throw error;
+    }
+  }
+
   async findMany(
     where?: WhereInput,
     options?: {

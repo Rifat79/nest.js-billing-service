@@ -296,6 +296,55 @@ export class GpPaymentService {
     return response.data.continueUrl;
   }
 
+  async invalidateACR(customerReference: string): Promise<{
+    success: boolean;
+    statusCode?: number;
+    responsePayload?: any;
+  }> {
+    const url = `${this.config.baseUrl}/partner/acrs/${customerReference}`;
+    const traceId = `invalidate-acr-${customerReference}`;
+
+    try {
+      const response = await this.httpClient.delete(
+        url,
+        this.getAuthHeaders(),
+        traceId,
+      );
+
+      if (response.error) {
+        this.logger.warn({
+          msg: 'ACR invalidation failed',
+          customerReference,
+          traceId,
+          error: response.error,
+          responsePayload: response.data,
+        });
+
+        return {
+          success: false,
+          statusCode: response.status,
+          responsePayload: response.data,
+        };
+      }
+
+      this.logger.info({
+        msg: 'ACR invalidated successfully',
+        customerReference,
+        traceId,
+        responsePayload: response.data,
+      });
+
+      return {
+        success: true,
+        statusCode: response.status,
+        responsePayload: response.data,
+      };
+    } catch (error) {
+      this.logger.error(error, 'Exception in invalidateACR');
+      throw error;
+    }
+  }
+
   private getAuthHeaders() {
     const credentials = `${this.config.auth.username}:${this.config.auth.password}`;
     const encoded = Buffer.from(credentials).toString('base64');

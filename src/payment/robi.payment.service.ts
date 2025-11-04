@@ -25,6 +25,12 @@ export interface RobiChargeRequestPayload {
   config: RobiChargeConfig;
 }
 
+export interface RobiCancelAocTokenPayload {
+  subscriptionId: string;
+  msisdn: string;
+  config: RobiChargeConfig;
+}
+
 export interface RobiPaymentServiceConfig {
   baseUrl: string;
   timeout: number;
@@ -45,6 +51,13 @@ interface AocTokenResponse {
 interface AocChargingStatusResponse {
   data: {
     transactionOperationStatus: string;
+    [key: string]: unknown;
+  };
+}
+
+interface AocCancelTokenResponse {
+  data: {
+    errorCode: string;
     [key: string]: unknown;
   };
 }
@@ -168,5 +181,76 @@ export class RobiPaymentService {
     }
 
     return response.data.data.transactionOperationStatus;
+  }
+
+  async cancelAocToken(data: RobiCancelAocTokenPayload): Promise<boolean> {
+    const { subscriptionId, msisdn, config } = data;
+    const traceId = `robi-cancel-${subscriptionId}`;
+    const url = this.config.baseUrl + '/cancelSubscription';
+
+    const payload = {
+      apiKey: config.apiKey,
+      username: config.username,
+      spTransID: subscriptionId,
+      operator: 'ROBI',
+      subscriptionID: config.subscriptionName,
+      msisdn,
+    };
+
+    try {
+      this.logger.info(
+        { traceId, msisdn, subscriptionId, url, payload },
+        'Initiating Robi AOC cancellation request',
+      );
+
+      const response = await this.httpClient.post<AocCancelTokenResponse>(
+        url,
+        payload,
+        {
+          timeout: this.config.timeout,
+        },
+      );
+
+      const responseData = (response.data?.data ?? {}) as Partial<
+        AocCancelTokenResponse['data']
+      >;
+      const isSuccessful = responseData.errorCode === '00';
+
+      if (!isSuccessful) {
+        this.logger.warn(
+          {
+            traceId,
+            msisdn,
+            subscriptionId,
+            responsePayload: responseData,
+          },
+          'Robi AOC cancellation failed: non-zero error code',
+        );
+        return false;
+      }
+
+      this.logger.info(
+        {
+          traceId,
+          msisdn,
+          subscriptionId,
+          responsePayload: responseData,
+        },
+        'Robi AOC cancellation successful',
+      );
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        {
+          traceId,
+          msisdn,
+          subscriptionId,
+          error,
+        },
+        'Exception during Robi AOC cancellation',
+      );
+      return false;
+    }
   }
 }

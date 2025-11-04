@@ -11,6 +11,17 @@ export class ChargeConfigNotFoundException extends RpcError {
   }
 }
 
+export class CancellationStrategyNotFoundException extends RpcError {
+  constructor(provider: string) {
+    super(
+      'CANCELLATION_STRATEGY_NOT_FOUND',
+      `Cancellation strategy not found for provider=${provider}`,
+      404,
+      { provider },
+    );
+  }
+}
+
 export class UnsupportedProviderException extends RpcError {
   constructor(provider: string) {
     super(
@@ -37,9 +48,30 @@ export class SubscriptionNotFoundException extends RpcError {
   constructor(subscriptionId: string) {
     super(
       'SUBSCRIPTION_NOT_FOUND',
-      `No subscription was found with ${subscriptionId}`,
+      `No subscription was found with '${subscriptionId}'`,
       404,
       { subscriptionId },
     );
+  }
+}
+
+export class SubscriptionCancelUpstreamException extends RpcError {
+  constructor(subscriptionId: string, operator: string) {
+    super(
+      'SUBSCRIPTION:CANCEL:FAILED',
+      `Operator "${operator}" failed to cancel subscription with ID: ${subscriptionId}`,
+      502,
+      {
+        subscriptionId,
+        operator,
+        context: 'SubscriptionCancelFailedException',
+      },
+    );
+  }
+}
+
+export class PlanPricingNotFoundException extends RpcError {
+  constructor() {
+    super('PLAN_PRICING_NOT_FOUND', `Plan pricing not found`, 404);
   }
 }
