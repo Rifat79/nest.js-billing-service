@@ -64,12 +64,14 @@ export class CallbackService {
             ...subscriptionData,
             status,
             next_billing_at:
-              status === SubscriptionStatus.ACTIVE ? nextBillingAt : null,
+              status === SubscriptionStatus.ACTIVE
+                ? new Date(nextBillingAt).toISOString()
+                : null,
             consent_id:
               subscriptionData.paymentProvider === PaymentProvider.GRAMEENPHONE
                 ? (query as GpCallbackQuery)?.consentId
                 : null,
-            consent_timestamp: consentTimestamp,
+            consent_timestamp: new Date(consentTimestamp).toISOString(),
             remarks,
           }),
         ),

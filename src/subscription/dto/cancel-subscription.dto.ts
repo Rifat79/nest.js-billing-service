@@ -1,5 +1,6 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsDefined,
   IsNumber,
   IsObject,
@@ -11,6 +12,13 @@ import {
 } from 'class-validator';
 
 export const BD_MSISDN_REGEX = /^(?:\+88|88)?01[3-9]\d{8}$/;
+
+export class CancelSubscriptionParamsDto {
+  @IsArray()
+  @Type(() => String)
+  @IsString({ each: true })
+  path: string[];
+}
 
 export class CancelSubscriptionBodyDto {
   @Expose({ name: 'transaction_id' })
@@ -48,7 +56,6 @@ export class CancelSubscriptionDto {
 
   @ValidateNested()
   @Type(() => CancelSubscriptionBodyDto)
-  @IsDefined()
   body: CancelSubscriptionBodyDto;
 
   @IsObject()
@@ -56,27 +63,23 @@ export class CancelSubscriptionDto {
   query?: Record<string, any>;
 
   @IsObject()
-  @IsOptional()
-  params?: Record<string, any>;
+  params: CancelSubscriptionParamsDto;
 
   @IsOptional()
   @IsString()
   requestId?: string;
 
   @IsOptional()
-  @IsString()
-  planPricingId?: string;
-
-  @IsOptional()
   @IsNumber()
   timestamp?: number;
 
   @Transform(({ obj }: { obj: CancelSubscriptionDto }) => {
-    const fromParams =
-      typeof obj.params?.subscriptionId === 'string'
-        ? obj.params.subscriptionId
+    const fromPath =
+      Array.isArray(obj.params?.path) && obj.params.path.length > 0
+        ? String(obj.params.path[obj.params.path.length - 1])
         : undefined;
-    return fromParams ?? '';
+
+    return fromPath ?? '';
   })
   @IsOptional()
   @IsString()

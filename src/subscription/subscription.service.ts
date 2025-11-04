@@ -24,7 +24,6 @@ import { PaymentService } from 'src/payment/payment.service';
 import { RobiChargeConfig } from 'src/payment/robi.payment.service';
 import { ProductService } from 'src/product/product.service';
 import { v4 as uuidv4 } from 'uuid';
-import { CancelSubscriptionDto } from './dto/cancel-subscription.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 
 export interface SubscriptionData {
@@ -196,9 +195,16 @@ export class SubscriptionsService {
     await this.billingEventRepo.createBatch(data);
   }
 
-  async cancelSubscription(
-    data: CancelSubscriptionDto,
-  ): Promise<{ success: boolean; message: string; statusCode: number }> {
+  async cancelSubscription(data: {
+    subscriptionId: string;
+    msisdn: string;
+    transactionId: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    statusCode: number;
+    subscriptionId?: string;
+  }> {
     const { msisdn, transactionId, subscriptionId } = data;
     const traceId = `cancel-subscription-${subscriptionId ?? transactionId}`;
 
@@ -239,6 +245,21 @@ export class SubscriptionsService {
         success: false,
         message: 'Incomplete subscription data for cancellation',
         statusCode: 500,
+        subscriptionId: subscriptionData.subscription_id,
+      };
+    }
+
+    if (
+      (subscriptionData.status as SubscriptionStatus) !==
+        SubscriptionStatus.ACTIVE &&
+      (subscriptionData.status as SubscriptionStatus) !==
+        SubscriptionStatus.SUSPENDED_PAYMENT_FAILED
+    ) {
+      return {
+        success: false,
+        message: `Could not cancel subscription for status: ${subscriptionData.status}`,
+        statusCode: 403,
+        subscriptionId: subscriptionData.subscription_id,
       };
     }
 
@@ -334,6 +355,7 @@ export class SubscriptionsService {
           success: false,
           message: 'Failed to update subscription status',
           statusCode: 500,
+          subscriptionId: subscriptionData.subscription_id,
         };
       }
 
@@ -363,6 +385,7 @@ export class SubscriptionsService {
       success: false,
       message: 'Could not cancel the subscription',
       statusCode: 502,
+      subscriptionId: subscriptionData.subscription_id,
     };
   }
 
