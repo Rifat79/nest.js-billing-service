@@ -25,8 +25,8 @@ export class SubscriptionsController {
     const payload = {
       subscriptionId:
         params.path?.length > 0 ? params.path[params.path?.length - 1] : '',
-      msisdn: body.msisdn,
-      transactionId: body.transactionId,
+      msisdn: body ? body.msisdn : '',
+      transactionId: body ? body.transactionId : '',
     };
 
     return this.subscriptionsService.cancelSubscription(payload);
