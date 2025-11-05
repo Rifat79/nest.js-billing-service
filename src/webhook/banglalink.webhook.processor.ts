@@ -13,7 +13,7 @@ import {
 } from './banglalink.webhook.service';
 import { WEBHOOK_RECEIVER_QUEUES } from './constants/queue.constants';
 
-@Processor(WEBHOOK_RECEIVER_QUEUES.BL, { concurrency: 20 })
+@Processor(WEBHOOK_RECEIVER_QUEUES.BL, { concurrency: 10 })
 export class BlWebhookProcessor extends WorkerHost {
   constructor(
     private readonly logger: PinoLogger,

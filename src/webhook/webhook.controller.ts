@@ -2,8 +2,10 @@ import { Controller, UseFilters } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { ValidatedPayload } from 'src/common/decorators/validated-payload.decorator';
 import { BillingMessagePatterns } from 'src/common/enums/message-patterns';
+import { WebhookProviderNotFoundException } from 'src/common/exceptions';
 import { TcpExceptionFilter } from 'src/common/filters/tcp-exception.filter';
 import { BLWebhookBody } from './banglalink.webhook.service';
+import { BkashWebhook } from './bkash.webhook.service';
 import { WebhookReceiverDto } from './dto/webhook-receiver.dto';
 import { WebhookService } from './webhook.service';
 
@@ -14,10 +16,16 @@ export class WebhookController {
 
   @MessagePattern(BillingMessagePatterns.WEBHOOK_RECEIVER)
   async receive(@ValidatedPayload() data: WebhookReceiverDto) {
-    const provider = data.meta.provider;
-    const payload = data?.body ?? data?.params ?? {};
-    await this.webhookService.receive(provider, payload as BLWebhookBody);
+    const { provider } = data.meta;
 
-    return { status: 'accepted' };
+    if (provider === 'BL') {
+      await this.webhookService.receive('BL', data.body as BLWebhookBody);
+    } else if (provider === 'BKASH') {
+      await this.webhookService.receive('BKASH', data.body as BkashWebhook);
+    } else {
+      throw new WebhookProviderNotFoundException(provider);
+    }
+
+    return { status: 'received' };
   }
 }

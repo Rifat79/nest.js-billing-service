@@ -11,6 +11,17 @@ export class ChargeConfigNotFoundException extends RpcError {
   }
 }
 
+export class WebhookProviderNotFoundException extends RpcError {
+  constructor(provider: string) {
+    super(
+      'WEBHOOK_PROVIDER_NOT_FOUND',
+      `Webhook provider not found: ${provider}`,
+      404,
+      { provider },
+    );
+  }
+}
+
 export class CancellationStrategyNotFoundException extends RpcError {
   constructor(provider: string) {
     super(

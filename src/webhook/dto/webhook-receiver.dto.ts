@@ -8,6 +8,8 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { BLWebhookBody } from '../banglalink.webhook.service';
+import { BkashWebhook } from '../bkash.webhook.service';
 
 class WebhookMetaDto {
   @IsString()
@@ -26,7 +28,7 @@ export class WebhookReceiverDto {
   )
   @IsDefined({ message: 'body is required when provider is BL or BKASH' })
   @IsObject({ message: 'body must be a valid object' })
-  body?: Record<string, any>;
+  body?: BLWebhookBody | BkashWebhook;
 
   @IsOptional()
   @IsObject()
