@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { BillingEventModule } from './billing-event/billing-event.module';
 import { CallbackModule } from './callback/callback.module';
 import { RedisModule } from './common/redis/redis.module';
 import appConfig from './config/app.config';
@@ -52,6 +53,8 @@ import { WebhookModule } from './webhook/webhook.module';
     EventPublisherModule,
 
     QueueSchedulerModule,
+
+    BillingEventModule,
   ],
   controllers: [AppController],
   providers: [AppService],

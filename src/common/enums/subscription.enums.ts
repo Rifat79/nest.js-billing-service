@@ -7,6 +7,7 @@ export enum SubscriptionStatus {
   PENDING_ACTIVATION = 'PENDING_ACTIVATION',
   ACTIVATION_FAILED = 'ACTIVATION_FAILED',
   CANCELLED = 'CANCELLED',
+  SUSPENDED = 'SUSPENDED',
 }
 
 export enum SubscriptionEvent {

@@ -149,7 +149,21 @@ export class SubscriptionsService {
         chargeConfig: chargeConfig.config,
         durationCountDays: product.product_plans[0].billing_cycle_days,
       };
+
       await this.redis.set(`subscriptions:${subscriptionId}`, subscriptionData);
+
+      if (paymentProvider === PaymentProvider.BANGLALINK) {
+        const provider = PaymentProvider.BANGLALINK;
+        const chargeCode = (
+          chargeConfig.config as unknown as BanglalinkChargeConfig
+        ).chargeCode;
+
+        await this.redis.set(
+          `subscriptions:${provider}:${msisdn}:${chargeCode}`,
+          subscriptionData,
+          3600,
+        );
+      }
 
       return { url, subscriptionId };
     } catch (error) {
@@ -387,6 +401,54 @@ export class SubscriptionsService {
       statusCode: 502,
       subscriptionId: subscriptionData.subscription_id,
     };
+  }
+
+  async findByMsisdnOfferCode(
+    msisdn: string,
+    offerCode: string,
+  ): Promise<SubscriptionDetails | null> {
+    return await this.subscriptionRepo.findFirstDynamic({
+      where: {
+        msisdn,
+        status: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.GRACE],
+        },
+        charging_configurations: {
+          is: {
+            config: {
+              path: ['offerCode'],
+              equals: offerCode,
+            },
+          },
+        },
+      },
+      include: {
+        charging_configurations: true,
+        payment_channels: true,
+        plan_pricing: true,
+        products: true,
+        product_plans: true,
+      },
+    });
+  }
+
+  async updateStatus(
+    subscriptionId: string,
+    status: SubscriptionStatus,
+    nextBillingAt?: Date | null,
+    remarks?: string | null,
+  ) {
+    return await this.subscriptionRepo.update(
+      {
+        subscription_id: subscriptionId,
+      },
+      {
+        status,
+        updated_at: new Date(),
+        remarks: remarks ?? '',
+        ...(nextBillingAt ? { next_billing_at: nextBillingAt } : {}),
+      },
+    );
   }
 
   private generateSubscriptionId() {

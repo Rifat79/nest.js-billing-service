@@ -153,6 +153,7 @@ export abstract class BaseRepository<
       take?: number;
       // Use the correct type for orderBy from the delegate's findMany args
       orderBy?: Prisma.Args<M, 'findMany'>['orderBy'];
+      include?: Prisma.Args<M, 'findMany'>['include'];
     },
     tx?: Prisma.TransactionClient,
   ): Promise<T[]> {
