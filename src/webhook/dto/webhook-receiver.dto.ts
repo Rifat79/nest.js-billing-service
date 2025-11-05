@@ -11,7 +11,7 @@ import {
 
 class WebhookMetaDto {
   @IsString()
-  provider: string;
+  provider: 'BL' | 'BKASH';
 
   [key: string]: any;
 }
