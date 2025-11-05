@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
+import { SubscriptionsService } from 'src/subscription/subscription.service';
 
 // Common fields shared by all webhook events
 interface BkashWebhookBase {
@@ -12,7 +14,7 @@ interface BkashWebhookBase {
 }
 
 // 1️⃣ Payment webhook structure
-export interface BkashPaymentWebhook extends BkashWebhookBase {
+interface BkashPaymentWebhook extends BkashWebhookBase {
   paymentId: number;
   paymentStatus: 'SUCCEEDED_PAYMENT' | 'FAILED_PAYMENT';
   trxId: string;
@@ -26,7 +28,7 @@ export interface BkashPaymentWebhook extends BkashWebhookBase {
 }
 
 // 2️⃣ Subscription webhook structure
-export interface BkashSubscriptionWebhook extends BkashWebhookBase {
+interface BkashSubscriptionWebhook extends BkashWebhookBase {
   subscriptionStatus: 'SUCCEEDED' | 'CANCELLED' | 'FAILED';
   cancelledBy?: string | null;
   requesterId?: number | null;
@@ -39,4 +41,20 @@ export interface BkashSubscriptionWebhook extends BkashWebhookBase {
 export type BkashWebhook = BkashPaymentWebhook | BkashSubscriptionWebhook;
 
 @Injectable()
-export class BkashWebhookService {}
+export class BkashWebhookService {
+  constructor(
+    private readonly logger: PinoLogger,
+    private readonly subscriptionService: SubscriptionsService,
+  ) {
+    this.logger.setContext(BkashWebhookService.name);
+  }
+
+  async handleSubscriptionEvent(data: BkashSubscriptionWebhook) {
+    const { subscriptionRequestId } = data;
+    const subscription = await this.subscriptionService.getSubscriptionDetails(
+      subscriptionRequestId,
+    );
+  }
+
+  async handlePaymentEvent(data: BkashPaymentWebhook) {}
+}

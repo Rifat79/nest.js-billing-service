@@ -451,6 +451,10 @@ export class SubscriptionsService {
     );
   }
 
+  async getSubscriptionDetails(subscriptionId: string) {
+    return await this.subscriptionRepo.findSubscriptionDetails(subscriptionId);
+  }
+
   private generateSubscriptionId() {
     return uuidv4();
   }
