@@ -36,6 +36,23 @@ interface BkashCancelSubscriptionResponse {
   subscriptionStatus: string;
   [key: string]: unknown;
 }
+
+interface BkashPaymentHistory {
+  id: number;
+  subscriptionId: number;
+  subscriptionRequestId: string;
+  dueDate: string; // ISO date string
+  status: 'SUCCEEDED_PAYMENT' | 'FAILED_PAYMENT';
+  trxId: string | null;
+  trxTime: string; // ISO datetime string
+  amount: number;
+  reverseTrxAmount: number | null;
+  reverseTrxId: string | null;
+  reverseTrxTime: string | null;
+}
+
+type BkashPaymentList = BkashPaymentHistory[];
+
 @Injectable()
 export class BkashPaymentService {
   private readonly config: BkashPaymentServiceConfig;
@@ -202,6 +219,64 @@ export class BkashPaymentService {
         'Exception during bKash subscription cancellation',
       );
       return false;
+    }
+  }
+
+  async getPaymentList(
+    subscriptionId: string,
+    config: BkashChargeConfig,
+  ): Promise<BkashPaymentList | null> {
+    const traceId = `bkash-payment-list-${subscriptionId}`;
+    const url =
+      this.config.baseUrl +
+      '/subscription/payment/bySubscriptionId' +
+      '/' +
+      subscriptionId;
+
+    try {
+      this.logger.info(
+        { traceId, subscriptionId, url },
+        'Fetching bKash payment list',
+      );
+
+      const response = await this.httpClient.get<BkashPaymentList>(url, {
+        headers: this.getHeaders(config.apiKey),
+        timeout: this.config.timeout,
+      });
+
+      if (response.error || !Array.isArray(response.data)) {
+        this.logger.warn(
+          {
+            traceId,
+            subscriptionId,
+            error: response.error,
+            responseData: response.data,
+          },
+          'Failed to fetch bKash payment list: invalid response',
+        );
+        return null;
+      }
+
+      this.logger.info(
+        {
+          traceId,
+          subscriptionId,
+          count: response.data.length,
+        },
+        'Successfully fetched bKash payment list',
+      );
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        {
+          traceId,
+          subscriptionId,
+          error,
+        },
+        'Exception during bKash payment list fetch',
+      );
+      return null;
     }
   }
 

@@ -42,8 +42,7 @@ export class BkashWebhookProcessor extends WorkerHost {
         jobId: job.id,
         subscriptionId: payload.subscriptionId,
         subscriptionRequestId: payload.subscriptionRequestId,
-        error: error.message,
-        stack: error.stack,
+        error: error,
         payload,
       });
       throw error;

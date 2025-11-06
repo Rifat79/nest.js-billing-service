@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { BillingEventModule } from 'src/billing-event/billing-event.module';
 import { EventPublisherModule } from 'src/event-publisher/event-publisher.module';
+import { PaymentModule } from 'src/payment/payment.module';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { BanglalinkWebhookService } from './banglalink.webhook.service';
 import { WEBHOOK_RECEIVER_QUEUES } from './constants/queue.constants';
@@ -17,6 +18,7 @@ import { WebhookService } from './webhook.service';
     SubscriptionModule,
     EventPublisherModule,
     BillingEventModule,
+    PaymentModule,
   ],
   controllers: [WebhookController],
   providers: [WebhookService, BanglalinkWebhookService],

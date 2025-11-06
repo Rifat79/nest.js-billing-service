@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { BillingEventRepository } from './billing-event.repository';
 import { ChargeConfigRepository } from './charge-config.repository';
 import { NagadCustomerRepository } from './nagad-customer.repository';
+import { PaymentChannelWebhookRepository } from './payment-channel-webhook.repository';
 import { PaymentChannelRepository } from './payment-channel.repository';
 import { PlanPricingRepository } from './plan-pricing.repository';
 import { PlanRepository } from './plan.repository';
@@ -43,6 +44,7 @@ export class PrismaModule {
         NagadCustomerRepository,
         SubscriptionRepository,
         BillingEventRepository,
+        PaymentChannelWebhookRepository,
       ],
       exports: [
         PrismaService,
@@ -59,6 +61,7 @@ export class PrismaModule {
         NagadCustomerRepository,
         SubscriptionRepository,
         BillingEventRepository,
+        PaymentChannelWebhookRepository,
       ],
     };
   }
@@ -80,6 +83,7 @@ export class PrismaModule {
         NagadCustomerRepository,
         SubscriptionRepository,
         BillingEventRepository,
+        PaymentChannelWebhookRepository,
       ],
       exports: [
         PrismaService,
@@ -95,6 +99,7 @@ export class PrismaModule {
         NagadCustomerRepository,
         SubscriptionRepository,
         BillingEventRepository,
+        PaymentChannelWebhookRepository,
       ],
     };
   }
