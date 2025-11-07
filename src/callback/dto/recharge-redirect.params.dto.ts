@@ -47,4 +47,10 @@ export class RechargeRedirectQueryDto {
     message: `status must be one of: ${Object.values(RedirectionStatus).join(', ')}`,
   })
   status: RedirectionStatus;
+
+  @IsString({ message: 'consentId must be a string' })
+  consentId: string;
+
+  @IsString({ message: 'customerReference must be a string' })
+  customerReference: string;
 }

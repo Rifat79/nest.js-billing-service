@@ -194,9 +194,85 @@ export class CallbackService {
       throw new SubscriptionNotFoundException(subscriptionId);
     }
 
-    const { status } = query;
+    const { status, customerReference, consentId } = query;
+    const { urls } = subscriptionData;
 
-    if (status === RedirectionStatus.SUCCESS) {
-    }
+    const subscriptionStatus =
+      status === RedirectionStatus.SUCCESS
+        ? SubscriptionStatus.ACTIVE
+        : SubscriptionStatus.ACTIVATION_FAILED;
+
+    const tasks: Promise<any>[] = [];
+    const nextBillingAt =
+      Date.now() + subscriptionData.durationCountDays * 24 * 60 * 60 * 1000;
+
+    tasks.push(
+      this.redis.rpush(
+        SUBSCRIPTION_POST_CONSENT_QUEUE,
+        JSON.stringify({
+          ...subscriptionData,
+          status: subscriptionStatus,
+          next_billing_at:
+            subscriptionStatus === SubscriptionStatus.ACTIVE
+              ? new Date(nextBillingAt).toISOString()
+              : null,
+          payment_channel_reference_id: customerReference,
+          consent_id: consentId,
+          consent_timestamp: new Date().toISOString(),
+        }),
+      ),
+    );
+
+    const billingEvent = this.buildBillingEventLog({
+      subscriptionData,
+      eventType: subscriptionData.auto_renew
+        ? SubscriptionEvent.SUBSCRIPTION_INITIAL
+        : SubscriptionEvent.SUBSCRIPTION_ON_DEMAND,
+      status,
+      amount: subscriptionData.initialPaymentAmount,
+      currency: subscriptionData.currency ?? 'BDT',
+      requestPayload: { query, subscriptionId },
+      response: { message: 'Received recharge and buy callback' },
+      duration: 0,
+    });
+
+    tasks.push(
+      this.redis.rpush(BILLING_EVENT_LOG_QUEUE, JSON.stringify(billingEvent)),
+    );
+
+    tasks.push(
+      this.eventPublisher.sendNotification({
+        id: crypto.randomUUID(),
+        source: 'dcb-billing-service',
+        subscriptionId,
+        merchantTransactionId: subscriptionData.merchant_transaction_id,
+        keyword: subscriptionData.keyword,
+        msisdn: subscriptionData.msisdn,
+        paymentProvider: subscriptionData.paymentProvider,
+        amount: subscriptionData.initialPaymentAmount,
+        currency: subscriptionData.currency,
+        billingCycleDays: subscriptionData.durationCountDays,
+        eventType:
+          subscriptionStatus === SubscriptionStatus.ACTIVE
+            ? 'subscription.success'
+            : SubscriptionStatus.CONSENT_REJECTED
+              ? 'subscription.cancel'
+              : 'subscription.fail',
+        timestamp: Date.now(),
+      }),
+    );
+
+    const results = await Promise.allSettled(tasks);
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        this.logger.warn(
+          { error: result.reason, taskIndex: index },
+          'CallbackService task failed',
+        );
+      }
+    });
+
+    return status === RedirectionStatus.SUCCESS ? urls.success : urls.error;
   }
 }

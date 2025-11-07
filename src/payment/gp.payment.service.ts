@@ -57,6 +57,7 @@ interface InitRechargeAndBuyPayload {
   paymentReference: string;
   customerReference: string;
   originalPaymentReference: string;
+  consentId: string;
 }
 
 interface GpPaymentServiceConfig {
@@ -262,9 +263,9 @@ export class GpPaymentService {
       originalReferenceCode: data.originalPaymentReference,
       referenceCode: data.paymentReference,
       urls: {
-        ok: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.SUCCESS}`,
-        deny: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.CANCEL}`,
-        error: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.FAIL}`,
+        ok: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.SUCCESS}&customerReference=${data.customerReference}&consentId=${data.consentId}`,
+        deny: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.CANCEL}&customerReference=${data.customerReference}&consentId=${data.consentId}`,
+        error: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.FAIL}&customerReference=${data.customerReference}&consentId=${data.consentId}`,
       },
     };
 

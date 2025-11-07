@@ -112,6 +112,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
         paymentReference: crypto.randomUUID(),
         originalPaymentReference: subscription_id,
         customerReference,
+        consentId,
       });
 
       if (rechargeUrl) {
