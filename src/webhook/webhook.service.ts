@@ -5,15 +5,18 @@ import { PinoLogger } from 'nestjs-pino';
 import { BLWebhookBody } from './banglalink.webhook.service';
 import { BkashWebhook } from './bkash.webhook.service';
 import { WEBHOOK_RECEIVER_QUEUES } from './constants/queue.constants';
+import { SSLWebhook } from './ssl.webhook.service';
 
 type WebhookMap = {
   BL: BLWebhookBody;
   BKASH: BkashWebhook;
+  SSL: SSLWebhook;
 };
 
 const JOB_NAMES = {
   BL: 'webhook:banglalink',
   BKASH: 'webhook:bkash',
+  SSL: 'webhook:ssl',
 } as const;
 
 @Injectable()
@@ -27,6 +30,8 @@ export class WebhookService {
     private readonly blQueue: Queue<BLWebhookBody>,
     @InjectQueue(WEBHOOK_RECEIVER_QUEUES.BKASH)
     private readonly bkashQueue: Queue<BkashWebhook>,
+    @InjectQueue(WEBHOOK_RECEIVER_QUEUES.SSL)
+    private readonly sslQueue: Queue<SSLWebhook>,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(WebhookService.name);
@@ -34,6 +39,7 @@ export class WebhookService {
     this.webhookQueues = {
       BL: this.blQueue,
       BKASH: this.bkashQueue,
+      SSL: this.sslQueue,
     };
   }
 

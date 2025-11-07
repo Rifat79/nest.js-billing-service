@@ -10,10 +10,11 @@ import {
 } from 'class-validator';
 import { BLWebhookBody } from '../banglalink.webhook.service';
 import { BkashWebhook } from '../bkash.webhook.service';
+import { SSLWebhook } from '../ssl.webhook.service';
 
 class WebhookMetaDto {
   @IsString()
-  provider: 'BL' | 'BKASH';
+  provider: 'BL' | 'BKASH' | 'SSL';
 
   [key: string]: any;
 }
@@ -24,11 +25,11 @@ export class WebhookReceiverDto {
   headers?: Record<string, string>;
 
   @ValidateIf((o: WebhookReceiverDto) =>
-    ['BL', 'BKASH'].includes(o.meta?.provider),
+    ['BL', 'BKASH', 'SSL'].includes(o.meta?.provider),
   )
   @IsDefined({ message: 'body is required when provider is BL or BKASH' })
   @IsObject({ message: 'body must be a valid object' })
-  body?: BLWebhookBody | BkashWebhook;
+  body?: BLWebhookBody | BkashWebhook | SSLWebhook;
 
   @IsOptional()
   @IsObject()

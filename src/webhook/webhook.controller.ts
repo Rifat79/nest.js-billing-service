@@ -7,6 +7,7 @@ import { TcpExceptionFilter } from 'src/common/filters/tcp-exception.filter';
 import { BLWebhookBody } from './banglalink.webhook.service';
 import { BkashWebhook } from './bkash.webhook.service';
 import { WebhookReceiverDto } from './dto/webhook-receiver.dto';
+import { SSLWebhook } from './ssl.webhook.service';
 import { WebhookService } from './webhook.service';
 
 @UseFilters(TcpExceptionFilter)
@@ -22,6 +23,9 @@ export class WebhookController {
       await this.webhookService.receive('BL', data.body as BLWebhookBody);
     } else if (provider === 'BKASH') {
       await this.webhookService.receive('BKASH', data.body as BkashWebhook);
+    }
+    if (provider === 'SSL') {
+      await this.webhookService.receive('SSL', data.body as SSLWebhook);
     } else {
       throw new WebhookProviderNotFoundException(provider);
     }

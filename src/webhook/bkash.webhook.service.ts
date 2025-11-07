@@ -115,7 +115,7 @@ export class BkashWebhookService {
       event_type: STATUS_MAP[data.subscriptionStatus],
       http_method: '',
       headers: '',
-      payload: data as unknown as Prisma.InputJsonValue,
+      payload: { ...data },
       ip_address: '',
       received_at: new Date(),
       processed_at: new Date(),
