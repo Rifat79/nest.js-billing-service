@@ -5,6 +5,10 @@ import { BillingMessagePatterns } from 'src/common/enums/message-patterns';
 import { TcpExceptionFilter } from 'src/common/filters/tcp-exception.filter';
 import { CallbackService } from './callback.service';
 import { AocRedirectParamsDto } from './dto/aoc-redirect-params.dto';
+import {
+  RechargeRedirectParamsDto,
+  RechargeRedirectQueryDto,
+} from './dto/recharge-redirect.params.dto';
 
 @UseFilters(TcpExceptionFilter)
 @Controller()
@@ -28,12 +32,42 @@ export class CallbackController {
         ? path[1]
         : undefined;
 
-    // sample response
+    // response
     return {
       statusCode: 302,
       headers: {
         Location: await this.callbackService.resolveUrl(
           subscriptionId ?? '#',
+          payload.query,
+        ),
+      },
+      body: null,
+    };
+  }
+
+  @MessagePattern(BillingMessagePatterns.RECHARGE_AND_BUY_REDIRECTION)
+  async handleRechargeRedirection(
+    @ValidatedPayload()
+    payload: {
+      params: RechargeRedirectParamsDto;
+      query: RechargeRedirectQueryDto;
+    },
+  ) {
+    const path = payload.params?.path;
+    const subscriptionId =
+      Array.isArray(path) &&
+      path.length === 4 &&
+      path[0] === 'subscriptions' &&
+      path[2] === 'recharge' &&
+      path[3] === 'redirect'
+        ? path[1]
+        : '#';
+
+    return {
+      statusCode: 302,
+      headers: {
+        Location: await this.callbackService.resolveUrlAfterRecharge(
+          subscriptionId,
           payload.query,
         ),
       },

@@ -49,6 +49,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
     if (status === RedirectionStatus.CANCEL) {
       return {
         redirectUrl: urls.deny,
+        paymentChannelReferenceId: '',
         status: SubscriptionStatus.CONSENT_REJECTED,
         remarks: '',
       };
@@ -57,6 +58,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
     if (status === RedirectionStatus.FAIL) {
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: '',
         status: SubscriptionStatus.CONSENT_FAILED,
         remarks: '',
       };
@@ -82,6 +84,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
 
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: '',
         status: SubscriptionStatus.ACTIVATION_FAILED,
         remarks: normalizedStatus ?? 'MISSING_STATUS',
       };
@@ -97,6 +100,7 @@ export class SSLCallbackStrategy implements CallbackStrategy {
 
     return {
       redirectUrl: urls.success,
+      paymentChannelReferenceId: '',
       status: SubscriptionStatus.ACTIVE,
       remarks: '',
     };

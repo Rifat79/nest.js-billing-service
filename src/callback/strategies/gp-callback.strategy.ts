@@ -55,6 +55,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (status === RedirectionStatus.CANCEL) {
       return {
         redirectUrl: urls.deny,
+        paymentChannelReferenceId: customerReference,
         status: SubscriptionStatus.CONSENT_REJECTED,
         remarks: reason,
       };
@@ -63,6 +64,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (status === RedirectionStatus.FAIL) {
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: customerReference,
         status: SubscriptionStatus.CONSENT_FAILED,
         remarks: reason,
       };
@@ -94,6 +96,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     if (response.success) {
       return {
         redirectUrl: urls.success,
+        paymentChannelReferenceId: customerReference,
         status: SubscriptionStatus.ACTIVE,
         billingContext,
       };
@@ -109,14 +112,12 @@ export class GpCallbackStrategy implements CallbackStrategy {
         paymentReference: crypto.randomUUID(),
         originalPaymentReference: subscription_id,
         customerReference,
-        successUrl: urls.success,
-        errorUrl: urls.error,
-        denyUrl: urls.deny,
       });
 
       if (rechargeUrl) {
         return {
           redirectUrl: rechargeUrl,
+          paymentChannelReferenceId: customerReference,
         };
       }
     }
@@ -127,6 +128,7 @@ export class GpCallbackStrategy implements CallbackStrategy {
     );
     return {
       redirectUrl: urls.error,
+      paymentChannelReferenceId: customerReference,
       status: SubscriptionStatus.ACTIVATION_FAILED,
       billingContext,
     };

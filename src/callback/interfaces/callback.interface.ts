@@ -2,6 +2,7 @@ import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
 
 export interface CallbackResult {
   redirectUrl: string;
+  paymentChannelReferenceId: string;
   status?: SubscriptionStatus;
   remarks?: string;
   billingContext?: {

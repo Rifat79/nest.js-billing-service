@@ -18,9 +18,7 @@ export class SubscriptionsController {
   }
 
   @MessagePattern(BillingMessagePatterns.CANCEL_SUBSCRIPTION)
-  async cancelGpRobiSubscription(
-    @ValidatedPayload() data: CancelSubscriptionDto,
-  ) {
+  async cancelSubscription(@ValidatedPayload() data: CancelSubscriptionDto) {
     const { body, params } = data;
     const payload = {
       subscriptionId:

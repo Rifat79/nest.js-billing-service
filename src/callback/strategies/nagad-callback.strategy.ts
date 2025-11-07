@@ -51,6 +51,7 @@ export class NagadCallbackStrategy implements CallbackStrategy {
     if (paymentStatus !== 'Success') {
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: payment_ref_id,
         status: SubscriptionStatus.ACTIVATION_FAILED,
         remarks: paymentStatus ?? 'MISSING_STATUS',
       };
@@ -58,6 +59,7 @@ export class NagadCallbackStrategy implements CallbackStrategy {
 
     return {
       redirectUrl: urls.success,
+      paymentChannelReferenceId: payment_ref_id,
       status: SubscriptionStatus.ACTIVE,
       remarks: '',
     };

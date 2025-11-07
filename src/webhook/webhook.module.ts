@@ -14,6 +14,7 @@ import { WebhookService } from './webhook.service';
     BullModule.registerQueue(
       { name: WEBHOOK_RECEIVER_QUEUES.BL },
       { name: WEBHOOK_RECEIVER_QUEUES.BKASH },
+      { name: WEBHOOK_RECEIVER_QUEUES.SSL },
     ),
     SubscriptionModule,
     EventPublisherModule,

@@ -57,9 +57,6 @@ interface InitRechargeAndBuyPayload {
   paymentReference: string;
   customerReference: string;
   originalPaymentReference: string;
-  successUrl: string;
-  errorUrl: string;
-  denyUrl: string;
 }
 
 interface GpPaymentServiceConfig {
@@ -256,13 +253,18 @@ export class GpPaymentService {
       this.config.baseUrl +
       `/partner/payment/v1/${data.customerReference}/transactions/recharge/prepare`;
 
+    const redirectUrl = this.configService.get<string>(
+      'RECHARGE_REDIRECT_URL',
+      'http://localhost:3080',
+    );
+
     const payload = {
       originalReferenceCode: data.originalPaymentReference,
       referenceCode: data.paymentReference,
       urls: {
-        ok: data.successUrl,
-        deny: data.errorUrl,
-        error: data.errorUrl,
+        ok: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.SUCCESS}`,
+        deny: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.CANCEL}`,
+        error: `${redirectUrl.replace(':subscriptionId', data.originalPaymentReference)}?status=${RedirectionStatus.FAIL}`,
       },
     };
 

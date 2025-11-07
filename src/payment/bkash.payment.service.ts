@@ -29,6 +29,7 @@ interface CreateSubscriptionResponse {
 }
 
 interface BkashCheckPaymentStatusResponse {
+  id: number;
   status: string;
 }
 
@@ -136,7 +137,7 @@ export class BkashPaymentService {
   async queryPaymentStatusWithRequestId(
     requestId: string,
     config: BkashChargeConfig,
-  ): Promise<string | null> {
+  ): Promise<BkashCheckPaymentStatusResponse | null> {
     const url =
       this.config.baseUrl + '/subscriptions/request-id' + '/' + requestId;
 
@@ -156,7 +157,7 @@ export class BkashPaymentService {
       return null;
     }
 
-    return response.data?.status ?? null;
+    return response.data ?? null;
   }
 
   async cancelSubscription({

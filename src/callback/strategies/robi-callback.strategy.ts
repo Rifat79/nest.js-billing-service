@@ -9,7 +9,7 @@ import { SubscriptionData } from 'src/subscription/subscription.service';
 import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
 import { CallbackResult } from '../interfaces/callback.interface';
 
-interface RobiCallbackQuery {
+export interface RobiCallbackQuery {
   aocTransID: string;
 }
 
@@ -63,6 +63,7 @@ export class RobiCallbackStrategy implements CallbackStrategy {
 
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: aocTransID,
         status: SubscriptionStatus.ACTIVATION_FAILED,
         remarks: normalizedStatus ?? 'MISSING_STATUS',
       };
@@ -78,6 +79,7 @@ export class RobiCallbackStrategy implements CallbackStrategy {
 
     return {
       redirectUrl: urls.success,
+      paymentChannelReferenceId: aocTransID,
       status: SubscriptionStatus.ACTIVE,
       remarks: '',
     };

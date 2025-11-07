@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { PaymentProvider } from 'src/common/enums/payment-providers';
 import {
+  RedirectionStatus,
   SubscriptionEvent,
   SubscriptionStatus,
 } from 'src/common/enums/subscription.enums';
@@ -17,6 +18,7 @@ import {
   SubscriptionsService,
 } from 'src/subscription/subscription.service';
 import { CallbackStrategyFactory } from './callback-strategy.factory';
+import { RechargeRedirectQueryDto } from './dto/recharge-redirect.params.dto';
 import { GpCallbackQuery } from './strategies';
 
 @Injectable()
@@ -67,6 +69,7 @@ export class CallbackService {
               status === SubscriptionStatus.ACTIVE
                 ? new Date(nextBillingAt).toISOString()
                 : null,
+            payment_channel_reference_id: result.paymentChannelReferenceId,
             consent_id:
               subscriptionData.paymentProvider === PaymentProvider.GRAMEENPHONE
                 ? (query as GpCallbackQuery)?.consentId
@@ -178,5 +181,22 @@ export class CallbackService {
       duration,
       created_at: new Date().toISOString(),
     };
+  }
+
+  async resolveUrlAfterRecharge(
+    subscriptionId: string,
+    query: RechargeRedirectQueryDto,
+  ) {
+    const subscriptionData =
+      await this.subscriptionService.getCachedSubscription(subscriptionId);
+
+    if (!subscriptionData) {
+      throw new SubscriptionNotFoundException(subscriptionId);
+    }
+
+    const { status } = query;
+
+    if (status === RedirectionStatus.SUCCESS) {
+    }
   }
 }

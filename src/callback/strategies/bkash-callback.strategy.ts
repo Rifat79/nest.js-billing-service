@@ -13,7 +13,6 @@ import { CallbackStrategy } from '../interfaces/callback-strategy.interface';
 import { CallbackResult } from '../interfaces/callback.interface';
 
 interface BkashCallbackQuery {
-  reference: string;
   status: RedirectionStatus;
 }
 
@@ -38,7 +37,7 @@ export class BkashCallbackStrategy implements CallbackStrategy {
   }
 
   async handle(query: BkashCallbackQuery): Promise<CallbackResult> {
-    const { status, reference } = query;
+    const { status } = query;
     const {
       urls,
       subscription_id: subscriptionRequestId,
@@ -48,24 +47,37 @@ export class BkashCallbackStrategy implements CallbackStrategy {
     if (status === RedirectionStatus.CANCEL) {
       return {
         redirectUrl: urls.deny,
+        paymentChannelReferenceId: '',
         status: SubscriptionStatus.CONSENT_REJECTED,
-        remarks: reference,
+        remarks: '',
       };
     }
 
     if (status === RedirectionStatus.FAIL) {
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: '',
         status: SubscriptionStatus.CONSENT_FAILED,
-        remarks: reference,
+        remarks: '',
       };
     }
 
-    const paymentStatus =
+    const paymentStatusRes =
       await this.bkashPaymentService.queryPaymentStatusWithRequestId(
         subscriptionRequestId,
         chargeConfig as BkashChargeConfig,
       );
+
+    if (!paymentStatusRes) {
+      return {
+        redirectUrl: urls.error,
+        paymentChannelReferenceId: '',
+        status: SubscriptionStatus.CONSENT_FAILED,
+        remarks: '',
+      };
+    }
+    const { status: paymentStatus, id: paymentChannelReferenceId } =
+      paymentStatusRes;
 
     if (
       !paymentStatus ||
@@ -79,6 +91,7 @@ export class BkashCallbackStrategy implements CallbackStrategy {
 
       return {
         redirectUrl: urls.error,
+        paymentChannelReferenceId: String(paymentChannelReferenceId),
         status: SubscriptionStatus.ACTIVATION_FAILED,
         remarks: paymentStatus ?? 'MISSING_STATUS',
       };
@@ -92,6 +105,7 @@ export class BkashCallbackStrategy implements CallbackStrategy {
 
     return {
       redirectUrl: urls.success,
+      paymentChannelReferenceId: String(paymentChannelReferenceId),
       status: SubscriptionStatus.ACTIVE,
       remarks: '',
     };
