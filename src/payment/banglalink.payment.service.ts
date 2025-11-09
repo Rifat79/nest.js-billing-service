@@ -126,7 +126,7 @@ export class BanglalinkPaymentService {
         throw new Error('Banglalink activation failed');
       }
 
-      const consentUrl = `${this.config.consentUrl}?token=${encodeURIComponent(requestId)}`;
+      const consentUrl = `${this.config.consentUrl}/bl-dob/consent?token=${encodeURIComponent(requestId)}`;
       this.logger.info(
         { msisdn, requestId, consentUrl },
         'Banglalink activation successful',
