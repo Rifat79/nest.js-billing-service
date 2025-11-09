@@ -54,9 +54,4 @@ export class SubscriptionsController {
         : 'PIN verification failed',
     };
   }
-
-  // @MessagePattern({ cmd: BillingMessagePatterns.CANCEL_SUBSCRIPTION })
-  // async cancelSubscription(@Payload() data: any) {
-  //   return this.subscriptionsService.cancelSubscription(data);
-  // }
 }
