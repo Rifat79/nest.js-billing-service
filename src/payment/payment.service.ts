@@ -14,6 +14,7 @@ import {
   BanglalinkChargeConfig,
   BanglalinkInitDeactivationPayload,
   BanglalinkPaymentService,
+  BanglalinkPinVerificationPayload,
 } from './banglalink.payment.service';
 import {
   BkashChargeConfig,
@@ -83,7 +84,7 @@ export class PaymentService {
     }
   }
 
-  private async getChargeConfig(
+  async getChargeConfig(
     paymentChannelId: number,
     productId: number,
     planId: number,
@@ -434,6 +435,53 @@ export class PaymentService {
         },
         'Exception during bKash subscription cancellation',
       );
+      return false;
+    }
+  }
+
+  async blVerifyPin(data: BanglalinkPinVerificationPayload): Promise<boolean> {
+    const { msisdn, requestId } = data;
+    const traceId = `bl-pin-verification-${requestId}`;
+
+    try {
+      this.logger.info(
+        { msisdn, requestId, traceId },
+        'Initiating Banglalink pin verification',
+      );
+
+      const result = await this.blPaymentService.submitConsent(data);
+
+      if (!result.success) {
+        this.logger.warn(
+          {
+            msg: 'Banglalink pin verification failed',
+            msisdn,
+            requestId,
+            traceId,
+            responsePayload: result.raw,
+          },
+          'Non-zero response code from Banglalink',
+        );
+        return false;
+      }
+
+      this.logger.info({
+        msg: 'Banglalink pin verification successful',
+        msisdn,
+        requestId,
+        traceId,
+        responsePayload: result.raw,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error({
+        msg: 'Exception during Banglalink pin verification',
+        msisdn,
+        requestId,
+        traceId,
+        error,
+      });
       return false;
     }
   }

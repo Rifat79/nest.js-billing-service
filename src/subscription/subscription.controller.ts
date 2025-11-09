@@ -5,6 +5,7 @@ import { BillingMessagePatterns } from 'src/common/enums/message-patterns';
 import { TcpExceptionFilter } from 'src/common/filters/tcp-exception.filter';
 import { CancelSubscriptionDto } from './dto/cancel-subscription.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { VerifyPinDto, VerifyPinProvider } from './dto/verify-pin.dto';
 import { SubscriptionsService } from './subscription.service';
 
 @UseFilters(TcpExceptionFilter)
@@ -28,6 +29,30 @@ export class SubscriptionsController {
     };
 
     return this.subscriptionsService.cancelSubscription(payload);
+  }
+
+  @MessagePattern(BillingMessagePatterns.VERIFY_PIN)
+  async verifyPin(@ValidatedPayload() data: VerifyPinDto) {
+    const provider =
+      data?.meta?.provider ?? data?.body?.provider ?? VerifyPinProvider.BL;
+    const subscriptionId =
+      data?.query?.order_tracking_id ?? data?.params.subscriptionId;
+    const pinCode = data?.query?.consent_no ?? data?.body?.pinCode ?? '#';
+
+    const result = await this.subscriptionsService.verifyPin(provider, {
+      subscriptionId,
+      pinCode,
+      subscriptionContractId: data?.body?.subscriptionContractId,
+      operatorCode: data?.body?.operatorCode,
+      tpayTransactionId: data?.body?.tpayTransactionId,
+      charge: data?.body?.charge,
+    });
+
+    return {
+      message: result
+        ? 'PIN verification successful'
+        : 'PIN verification failed',
+    };
   }
 
   // @MessagePattern({ cmd: BillingMessagePatterns.CANCEL_SUBSCRIPTION })

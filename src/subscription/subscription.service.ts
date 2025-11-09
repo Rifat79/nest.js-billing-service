@@ -5,6 +5,7 @@ import { PaymentProvider } from 'src/common/enums/payment-providers';
 import { SubscriptionStatus } from 'src/common/enums/subscription.enums';
 import {
   CancellationStrategyNotFoundException,
+  PinVerificationFailedException,
   SubscriptionNotFoundException,
 } from 'src/common/exceptions';
 import { RedisService } from 'src/common/redis/redis.service';
@@ -25,6 +26,7 @@ import { RobiChargeConfig } from 'src/payment/robi.payment.service';
 import { ProductService } from 'src/product/product.service';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { VerifyPinProvider } from './dto/verify-pin.dto';
 
 export interface SubscriptionData {
   subscription_id: string;
@@ -453,6 +455,53 @@ export class SubscriptionsService {
 
   async getSubscriptionDetails(subscriptionId: string) {
     return await this.subscriptionRepo.findSubscriptionDetails(subscriptionId);
+  }
+
+  async verifyPin(
+    provider: VerifyPinProvider,
+    data: {
+      subscriptionId: string;
+      pinCode: string;
+      subscriptionContractId?: string;
+      operatorCode?: string;
+      tpayTransactionId?: string;
+      charge?: boolean;
+    },
+  ): Promise<boolean> {
+    const { subscriptionId } = data;
+
+    const subscription = await this.redis.get<SubscriptionData>(
+      `subscriptions:${subscriptionId}`,
+    );
+
+    if (!subscription) {
+      throw new SubscriptionNotFoundException(subscriptionId);
+    }
+
+    const chargeConfig = await this.paymentService.getChargeConfig(
+      subscription.payment_channel_id,
+      subscription.product_id,
+      subscription.plan_id,
+    );
+
+    if (provider === VerifyPinProvider.BL) {
+      const result = await this.paymentService.blVerifyPin({
+        msisdn: subscription.msisdn,
+        chargeConfig: chargeConfig as unknown as BanglalinkChargeConfig,
+        requestId: subscription.subscription_id,
+        consentNo: data.pinCode,
+      });
+
+      if (!result) {
+        throw new PinVerificationFailedException(provider, subscriptionId, '');
+      }
+
+      return result;
+    } else {
+      this.logger.warn(`Only BL is implemented right now`);
+    }
+
+    return false;
   }
 
   private generateSubscriptionId() {

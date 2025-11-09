@@ -86,3 +86,16 @@ export class PlanPricingNotFoundException extends RpcError {
     super('PLAN_PRICING_NOT_FOUND', `Plan pricing not found`, 404);
   }
 }
+
+export class PinVerificationFailedException extends RpcError {
+  constructor(provider: string, subscriptionId: string, reason?: string) {
+    super(
+      'PIN_VERIFICATION_FAILED',
+      `PIN verification failed for provider=${provider}, subscription=${subscriptionId}${
+        reason ? `: ${reason}` : ''
+      }`,
+      400,
+      { provider, subscriptionId, reason },
+    );
+  }
+}
