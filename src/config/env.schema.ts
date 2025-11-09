@@ -14,7 +14,7 @@ export const envSchema = z.object({
   REDIS_PORT: z.coerce.number().int().positive(),
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.coerce.number().int().nonnegative().optional(),
-  REDIS_KEY_PREFIX: z.string().optional().default('cache:'),
+  REDIS_KEY_PREFIX: z.string().optional(),
   CACHE_TTL_MS: z.coerce
     .number()
     .int()

@@ -33,7 +33,7 @@ interface TLS {
           db: configService.get<number>('redis.db', 0),
           keyPrefix: configService.get<string>(
             'redis.keyPrefix',
-            'dcb_billing:',
+            'dcb:billing:',
           ),
           // Ensure tlsEnabled is strictly a boolean
           tlsEnabled: configService.get<string>('redis.tlsEnabled') === 'true',
@@ -55,6 +55,7 @@ interface TLS {
           port: config.port,
           password: config.password,
           db: config.db,
+          keyPrefix: config.keyPrefix,
           maxRetriesPerRequest: 3,
           retryStrategy: (times: number): number => {
             // TypeScript issue fixed by ensuring the return type is number
